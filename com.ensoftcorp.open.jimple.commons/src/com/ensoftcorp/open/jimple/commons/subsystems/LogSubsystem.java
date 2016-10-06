@@ -2,18 +2,18 @@ package com.ensoftcorp.open.jimple.commons.subsystems;
 
 import com.ensoftcorp.open.commons.subsystems.Subsystem;
 
-public class SerializationSubsystem extends Subsystem {
+public class LogSubsystem extends Subsystem {
 
-	public static final String TAG = "SERIALIZATION_SUBSYSTEM";
+	public static final String TAG = "LOG_SUBSYSTEM";
 
 	@Override
 	public String getName() {
-		return "Serialization";
+		return "Log";
 	}
 
 	@Override
 	public String getDescription() {
-		return "Serialization libraries";
+		return "Logging libraries";
 	}
 
 	@Override
@@ -31,5 +31,5 @@ public class SerializationSubsystem extends Subsystem {
 		// TODO: implement
 		return new String[] {};
 	}
-	
+
 }

@@ -22,6 +22,11 @@ public class IntrospectionSubsystem extends Subsystem {
 	}
 
 	@Override
+	public String[] getParentTags() {
+		return new String[] { JavaCoreSubsystem.TAG };
+	}
+
+	@Override
 	public String[] getNamespaces() {
 		// TODO: implement
 		return new String[] {};

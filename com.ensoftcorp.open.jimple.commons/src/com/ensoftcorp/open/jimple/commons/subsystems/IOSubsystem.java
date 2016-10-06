@@ -13,12 +13,17 @@ public class IOSubsystem extends Subsystem {
 
 	@Override
 	public String getDescription() {
-		return "General input/output, serialization libraries";
+		return "General input/output";
 	}
 
 	@Override
 	public String getTag() {
 		return TAG;
+	}
+
+	@Override
+	public String[] getParentTags() {
+		return new String[] { JavaCoreSubsystem.TAG, HardwareSubsystem.TAG };
 	}
 
 	@Override

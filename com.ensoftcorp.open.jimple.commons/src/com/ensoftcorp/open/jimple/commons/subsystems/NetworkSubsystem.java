@@ -23,7 +23,7 @@ public class NetworkSubsystem extends Subsystem {
 
 	@Override
 	public String[] getParentTags() {
-		return new String[] { SerializationSubsystem.TAG };
+		return new String[] { IOSubsystem.TAG };
 	}
 
 	@Override

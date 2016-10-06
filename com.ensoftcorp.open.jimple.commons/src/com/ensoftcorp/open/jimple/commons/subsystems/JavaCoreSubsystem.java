@@ -22,9 +22,14 @@ public class JavaCoreSubsystem extends Subsystem {
 	}
 
 	@Override
+	public String[] getParentTags() {
+		return new String[] { Subsystem.ROOT_SUBSYSTEM_TAG };
+	}
+
+	@Override
 	public String[] getNamespaces() {
 		// TODO: implement
-		return new String[] { Subsystem.ROOT_SUBSYSTEM_TAG };
+		return new String[] {};
 	}
 
 }

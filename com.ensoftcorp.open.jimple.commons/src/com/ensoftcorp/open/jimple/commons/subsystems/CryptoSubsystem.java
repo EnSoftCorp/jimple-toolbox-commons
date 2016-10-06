@@ -23,7 +23,7 @@ public class CryptoSubsystem extends Subsystem {
 
 	@Override
 	public String[] getParentTags() {
-		return new String[] { SecuritySubsystem.TAG };
+		return new String[] { MathSubsystem.TAG, SecuritySubsystem.TAG };
 	}
 
 	@Override
