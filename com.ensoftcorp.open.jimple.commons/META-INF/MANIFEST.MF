@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Commons
+Bundle-SymbolicName: com.ensoftcorp.open.jimple.commons;singleton:=true
+Bundle-Version: 3.0.11.qualifier
+Bundle-Activator: com.ensoftcorp.open.jimple.commons.Activator
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ com.ensoftcorp.open.commons;bundle-version="3.0.11",
+ com.ensoftcorp.atlas.jimple.core;bundle-version="3.0.11",
+ com.ensoftcorp.atlas.jimple.ui;bundle-version="3.0.11"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ActivationPolicy: lazy
+Export-Package: com.ensoftcorp.open.jimple.commons.analyzers

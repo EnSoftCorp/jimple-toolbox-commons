@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.CryptoSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.IntrospectionSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.IOSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.JavaCoreSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.NetworkSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.TestingSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.UISubsystem"></subsystem>
+   </extension>
+
+</plugin>
