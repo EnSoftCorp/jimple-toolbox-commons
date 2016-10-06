@@ -3,7 +3,27 @@
 <plugin>
 
    <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.CompressionSubsystem"></subsystem>
+   </extension>
+
+   <extension point="com.ensoftcorp.open.commons.subsystem">
       <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.CryptoSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.DatabaseSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.DataStructureSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.GarbageCollectionSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.HardwareSubsystem"></subsystem>
    </extension>
    
    <extension point="com.ensoftcorp.open.commons.subsystem">
@@ -19,11 +39,39 @@
    </extension>
    
    <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.LogSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.MathSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
       <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.NetworkSubsystem"></subsystem>
    </extension>
    
    <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.RandomSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.RMISubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.SecuritySubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.SerializationSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
       <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.TestingSubsystem"></subsystem>
+   </extension>
+   
+   <extension point="com.ensoftcorp.open.commons.subsystem">
+      <subsystem class="com.ensoftcorp.open.jimple.commons.subsystems.ThreadingSubsystem"></subsystem>
    </extension>
    
    <extension point="com.ensoftcorp.open.commons.subsystem">

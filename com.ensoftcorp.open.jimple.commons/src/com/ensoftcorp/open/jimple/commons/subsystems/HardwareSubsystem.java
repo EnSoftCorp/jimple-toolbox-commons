@@ -28,7 +28,7 @@ public class HardwareSubsystem extends Subsystem {
 
 	@Override
 	public String[] getNamespaces() {
-		// TODO: implement
-		return new String[] {};
+		return new String[] { "javax.sound.midi", "javax.sound.midi.spi", "javax.sound.sampled",
+				"javax.sound.sampled.spi" };
 	}
 }

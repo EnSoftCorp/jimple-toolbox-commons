@@ -28,8 +28,7 @@ public class JavaCoreSubsystem extends Subsystem {
 
 	@Override
 	public String[] getNamespaces() {
-		// TODO: implement
-		return new String[] {};
+		return new String[] { "java.lang", "java.util", "java.util.regex", "java.util.spi" };
 	}
 
 }

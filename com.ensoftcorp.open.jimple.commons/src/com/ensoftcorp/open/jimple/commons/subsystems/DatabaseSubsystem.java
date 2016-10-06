@@ -28,8 +28,8 @@ public class DatabaseSubsystem extends Subsystem {
 
 	@Override
 	public String[] getNamespaces() {
-		// TODO: implement
-		return new String[] {};
+		return new String[] { "java.sql", "javax.sql", "javax.sql.rowset", "javax.sql.rowset.serial",
+				"javax.sql.rowset.spi" };
 	}
 
 }

@@ -28,8 +28,7 @@ public class ThreadingSubsystem extends Subsystem {
 
 	@Override
 	public String[] getNamespaces() {
-		// TODO: implement
-		return new String[] {};
+		return new String[] { "java.util.concurrent", "java.util.concurrent.atomic", "java.util.concurrent.locks" };
 	}
-	
+
 }

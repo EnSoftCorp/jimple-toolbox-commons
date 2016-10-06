@@ -28,8 +28,7 @@ public class GarbageCollectionSubsystem extends Subsystem {
 
 	@Override
 	public String[] getNamespaces() {
-		// TODO: implement
-		return new String[] {};
+		return new String[] { "java.lang.ref" };
 	}
-	
+
 }

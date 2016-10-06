@@ -28,8 +28,8 @@ public class NetworkSubsystem extends Subsystem {
 
 	@Override
 	public String[] getNamespaces() {
-		// TODO: implement
-		return new String[] {};
+		return new String[] { "java.net", "java.rmi", "java.rmi.activation", "java.rmi.dgc", "java.rmi.registry",
+				"java.rmi.server", "javax.net", "javax.net.ssl" };
 	}
 
 }

@@ -28,7 +28,6 @@ public class DataStructureSubsystem extends Subsystem {
 
 	@Override
 	public String[] getNamespaces() {
-		// TODO: implement
-		return new String[] {};
+		return new String[] { "java.beans", "java.beans.beancontext", "java.text", "java.text.spi" };
 	}
 }

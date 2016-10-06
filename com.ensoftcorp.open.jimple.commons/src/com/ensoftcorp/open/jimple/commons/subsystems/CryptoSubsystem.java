@@ -28,7 +28,6 @@ public class CryptoSubsystem extends Subsystem {
 
 	@Override
 	public String[] getNamespaces() {
-		// TODO: implement
-		return new String[] {};
+		return new String[] { "javax.crypto", "javax.crypto.interfaces", "javax.crypto.spec" };
 	}
 }

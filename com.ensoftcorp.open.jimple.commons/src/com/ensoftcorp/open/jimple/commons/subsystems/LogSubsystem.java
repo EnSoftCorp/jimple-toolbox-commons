@@ -28,8 +28,7 @@ public class LogSubsystem extends Subsystem {
 
 	@Override
 	public String[] getNamespaces() {
-		// TODO: implement
-		return new String[] {};
+		return new String[] { "java.util.logging" };
 	}
 
 }
