@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <!-- create an initializer extension to initialize preferences -->
+   <extension
+      point="org.eclipse.equinox.preferences.preferences">
+	   <initializer
+	         class="com.ensoftcorp.open.jimple.commons.preferences.JimpleCommonsPreferences">
+	   </initializer>
+	</extension>
+
+   <!-- add jimple toolbox commons preference page (under the toolbox commons preferences) -->
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            class="com.ensoftcorp.open.jimple.commons.ui.JimpleCommonsPreferencesPage"
+            id="com.ensoftcorp.open.jimple.commons.ui.preferences"
+            name="Jimple Toolbox Commons"
+            category="com.ensoftcorp.open.commons.ui.preferences">
+      </page>
+   </extension>
+   
+    <!-- add a post code map hook for running jimple commons analysis -->
+   <extension
+         point="com.ensoftcorp.atlas.core.ToolboxExtensionPoint">
+      <indexer
+            class="com.ensoftcorp.open.jimple.commons.map.JimpleCommonsCodemapStage">
+      </indexer>
+   </extension>
+   
+</plugin>

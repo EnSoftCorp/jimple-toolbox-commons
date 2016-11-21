@@ -39,9 +39,8 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
  * 
  * @author Tom Deering - initial implementation
  * @author Jon Mathews - replaced recursive logic iterative implementation
- * @author Nikhil Ranade - added loop child edges to match Atlas for Java graph
- *         schema
- * @author Ben Holland - minor refactoring
+ * @author Nikhil Ranade - added loop child edges to match Atlas for Java graph schema
+ * @author Ben Holland - minor refactoring, integration utils
  */
 public class DecompiledLoopIdentification implements Runnable {
 	public static interface CFGNode {
