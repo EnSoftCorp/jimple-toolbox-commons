@@ -21,12 +21,9 @@
       </page>
    </extension>
    
-    <!-- add a post code map hook for running jimple commons analysis -->
-   <extension
-         point="com.ensoftcorp.atlas.core.ToolboxExtensionPoint">
-      <indexer
-            class="com.ensoftcorp.open.jimple.commons.map.JimpleCommonsCodemapStage">
-      </indexer>
+   <!-- adds the prioritized codemap stage for points-to analysis -->
+   <extension point="com.ensoftcorp.open.commons.codemap">
+      <codemap class="com.ensoftcorp.open.jimple.commons.loops.DecompiledLoopIdenfiticationCodemapStage"></codemap>
    </extension>
    
 </plugin>
