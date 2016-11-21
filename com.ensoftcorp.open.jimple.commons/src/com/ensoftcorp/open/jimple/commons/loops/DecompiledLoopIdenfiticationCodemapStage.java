@@ -8,7 +8,7 @@ import com.ensoftcorp.open.jimple.commons.preferences.JimpleCommonsPreferences;
 
 public class DecompiledLoopIdenfiticationCodemapStage extends PrioritizedCodemapStage {
 
-	public static final String IDENTIFIER = "DECOMPILED_LOOP_RECOVERY";
+	public static final String IDENTIFIER = "com.ensoftcorp.open.jimple.commons.loops.recovery";
 	
 	@Override
 	public String getDisplayName() {
