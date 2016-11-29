@@ -1,11 +1,8 @@
 package com.ensoftcorp.open.jimple.commons.preferences;
 
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
-import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.IPreferenceStore;
 
-import com.ensoftcorp.open.commons.subsystems.Subsystem;
-import com.ensoftcorp.open.commons.subsystems.Subsystems;
 import com.ensoftcorp.open.jimple.commons.Activator;
 import com.ensoftcorp.open.jimple.commons.log.Log;
 
