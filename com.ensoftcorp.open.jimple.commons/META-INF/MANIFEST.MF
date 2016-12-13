@@ -1,12 +1,12 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Commons
+Bundle-Name: Jimple Toolbox Commons
 Bundle-SymbolicName: com.ensoftcorp.open.jimple.commons;singleton:=true
-Bundle-Version: 3.0.12.qualifier
+Bundle-Version: 3.0.13.qualifier
 Bundle-Activator: com.ensoftcorp.open.jimple.commons.Activator
-Require-Bundle: com.ensoftcorp.atlas.jimple.core;bundle-version="3.0.12";visibility:=reexport,
- com.ensoftcorp.atlas.jimple.ui;bundle-version="3.0.12";visibility:=reexport,
- com.ensoftcorp.open.java.commons;bundle-version="3.0.12"
+Require-Bundle: com.ensoftcorp.atlas.jimple.core;bundle-version="3.0.13";visibility:=reexport,
+ com.ensoftcorp.atlas.jimple.ui;bundle-version="3.0.13";visibility:=reexport,
+ com.ensoftcorp.open.java.commons;bundle-version="3.0.13"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Export-Package: com.ensoftcorp.open.jimple.commons.loops,

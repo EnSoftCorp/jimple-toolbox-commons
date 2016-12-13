@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="com.ensoftcorp.open.jimple.commons.feature.group"
+      label="Jimple Toolbox Commons"
+      version="3.0.13.qualifier"
+      provider-name="EnSoft Corp.">
+
+   <description url="https://ensoftcorp.github.io/jimple-toolbox-commons">
+      A set of common utilities for jimple program analysis using Atlas.
+   </description>
+
+   <copyright url="https://ensoftcorp.github.io/jimple-toolbox-commons">
+      Copyright 2016 EnSoft Corp.
+   </copyright>
+
+   <license url="https://raw.githubusercontent.com/EnSoftCorp/jimple-toolbox-commons/master/LICENSE">
+      The MIT License (MIT)
+
+Copyright (c) 2016 EnSoft Corp.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the &quot;Software&quot;), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+   </license>
+
+   <url>
+      <update label="ensoftcorp.github.io" url="https://ensoftcorp.github.io/jimple-toolbox-commons/updates/"/>
+      <discovery label="Atlas" url="http://download.ensoftcorp.com/atlas/eclipse"/>
+   </url>
+
+   <requires>
+      <import plugin="org.eclipse.ui"/>
+      <import plugin="org.eclipse.core.runtime"/>
+      <import plugin="org.eclipse.core.resources"/>
+      <import plugin="org.eclipse.core.filesystem"/>
+      <import plugin="org.eclipse.swt"/>
+      <import plugin="org.eclipse.ui.ide"/>
+      <import plugin="com.ensoftcorp.atlas.core" version="3.0.13" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.atlas.ui" version="3.0.13" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.atlas.jimple.core" version="3.0.13" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.atlas.jimple.ui" version="3.0.13" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.atlas.c.core" version="3.0.13" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.atlas.c.ui" version="3.0.13" match="greaterOrEqual"/>
+      <import plugin="org.apache.commons.io" version="2.2.0" match="greaterOrEqual"/>
+      <import plugin="org.apache.commons.lang3" version="3.1.0" match="greaterOrEqual"/>
+   </requires>
+
+   <plugin
+         id="com.ensoftcorp.open.jimple.commons"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>
