@@ -31,6 +31,7 @@ public class LoopNestingDepthFilter extends NodeFilter {
 		this.addPossibleParameter(DEPTH_GREATER_THAN_EQUAL_TO, Integer.class, false);
 		this.addPossibleParameter(DEPTH_LESS_THAN, Integer.class, false);
 		this.addPossibleParameter(DEPTH_LESS_THAN_EQUAL_TO, Integer.class, false);
+		this.setMinimumNumberParametersRequired(1);
 	}
 
 	@Override
