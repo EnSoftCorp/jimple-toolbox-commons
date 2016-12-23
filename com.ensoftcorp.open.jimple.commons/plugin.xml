@@ -26,4 +26,9 @@
       <codemap class="com.ensoftcorp.open.jimple.commons.loops.DecompiledLoopIdenfiticationCodemapStage"></codemap>
    </extension>
    
+   <!-- add filter defintions -->
+   <extension point="com.ensoftcorp.open.commons.filter">
+      <filter class="com.ensoftcorp.open.jimple.commons.filters.LoopNestingDepthFilter"></filter>
+   </extension>
+   
 </plugin>
