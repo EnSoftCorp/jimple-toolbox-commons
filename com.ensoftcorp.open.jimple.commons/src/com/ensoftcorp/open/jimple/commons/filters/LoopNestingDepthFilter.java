@@ -27,10 +27,10 @@ public class LoopNestingDepthFilter extends NodeFilter {
 	private static final String DEPTH_LESS_THAN_EQUAL_TO = "DEPTH_LESS_THAN_EQUAL_TO";
 
 	public LoopNestingDepthFilter() {
-		this.addPossibleParameter(DEPTH_GREATER_THAN, Integer.class, false);
-		this.addPossibleParameter(DEPTH_GREATER_THAN_EQUAL_TO, Integer.class, false);
-		this.addPossibleParameter(DEPTH_LESS_THAN, Integer.class, false);
-		this.addPossibleParameter(DEPTH_LESS_THAN_EQUAL_TO, Integer.class, false);
+		this.addPossibleParameter(DEPTH_GREATER_THAN, Integer.class, false, "Filters loops with local nesting depth less than or equal to the specified value");
+		this.addPossibleParameter(DEPTH_GREATER_THAN_EQUAL_TO, Integer.class, false, "Filters loops with local nesting depth less than the specified value");
+		this.addPossibleParameter(DEPTH_LESS_THAN, Integer.class, false, "Filters loops with local nesting depth greater than or equal to the specified value");
+		this.addPossibleParameter(DEPTH_LESS_THAN_EQUAL_TO, Integer.class, false, "Filters loops with local nesting depth greater than the specified value");
 		this.setMinimumNumberParametersRequired(1);
 	}
 
