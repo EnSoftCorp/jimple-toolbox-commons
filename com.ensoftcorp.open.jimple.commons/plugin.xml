@@ -31,4 +31,12 @@
       <filter class="com.ensoftcorp.open.jimple.commons.filters.LoopNestingDepthFilter"></filter>
    </extension>
    
+   <!-- adds filter rootset definitions -->
+   <extension point="com.ensoftcorp.open.commons.filter.rootset">
+      <rootset class="com.ensoftcorp.open.jimple.commons.filters.rootset.UniverseLoopsRootset"></rootset>
+   </extension>
+   <extension point="com.ensoftcorp.open.commons.filter.rootset">
+      <rootset class="com.ensoftcorp.open.jimple.commons.filters.rootset.ApplicationLoopsRootset"></rootset>
+   </extension>
+   
 </plugin>
