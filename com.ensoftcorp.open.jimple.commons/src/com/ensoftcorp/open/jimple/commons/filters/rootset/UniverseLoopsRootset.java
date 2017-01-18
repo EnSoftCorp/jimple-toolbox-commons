@@ -3,7 +3,7 @@ package com.ensoftcorp.open.jimple.commons.filters.rootset;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.open.commons.filters.rootset.FilterableRootset;
-import com.ensoftcorp.open.jimple.commons.loops.DecompiledLoopIdentification;
+import com.ensoftcorp.open.jimple.commons.loops.DecompiledLoopIdentification.CFGNode;
 
 public class UniverseLoopsRootset extends FilterableRootset {
 
@@ -19,7 +19,7 @@ public class UniverseLoopsRootset extends FilterableRootset {
 
 	@Override
 	public Q getRootSet() {
-		return Common.universe().nodesTaggedWithAny(DecompiledLoopIdentification.CFGNode.LOOP_HEADER);
+		return Common.universe().nodesTaggedWithAny(CFGNode.LOOP_HEADER);
 	}
 
 }
