@@ -25,9 +25,9 @@ import com.ensoftcorp.atlas.core.db.graph.operation.ForwardGraph;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.db.set.SingletonAtlasSet;
-import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.jimple.commons.log.Log;
 
 /**
  * Uses algorithm from Wei et al. to identify loops, even irreducible ones.
