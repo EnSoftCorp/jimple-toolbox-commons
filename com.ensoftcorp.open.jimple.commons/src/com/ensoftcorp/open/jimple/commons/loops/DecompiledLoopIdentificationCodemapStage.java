@@ -6,7 +6,7 @@ import com.ensoftcorp.open.commons.codemap.PrioritizedCodemapStage;
 import com.ensoftcorp.open.jimple.commons.log.Log;
 import com.ensoftcorp.open.jimple.commons.preferences.JimpleCommonsPreferences;
 
-public class DecompiledLoopIdenfiticationCodemapStage extends PrioritizedCodemapStage {
+public class DecompiledLoopIdentificationCodemapStage extends PrioritizedCodemapStage {
 
 	public static final String IDENTIFIER = "com.ensoftcorp.open.jimple.commons.loops.recovery";
 	
