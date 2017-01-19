@@ -5,11 +5,11 @@ import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.open.commons.filters.rootset.FilterableRootset;
 import com.ensoftcorp.open.jimple.commons.loops.DecompiledLoopIdentification.CFGNode;
 
-public class UniverseLoopsRootset extends FilterableRootset {
+public class LoopHeadersRootset extends FilterableRootset {
 
 	@Override
 	public String getName() {
-		return "Universe Loops";
+		return "Loop Headers";
 	}
 
 	@Override
