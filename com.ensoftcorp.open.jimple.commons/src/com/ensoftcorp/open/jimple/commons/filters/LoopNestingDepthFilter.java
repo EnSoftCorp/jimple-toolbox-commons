@@ -93,7 +93,7 @@ public class LoopNestingDepthFilter extends NodeFilter {
 			}
 		}
 		
-		return Common.toQ(result);
+		return super.filter(Common.toQ(result), parameters);
 	}
 
 	@Override
