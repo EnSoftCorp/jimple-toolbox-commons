@@ -24,10 +24,25 @@ private static boolean initialized = false;
 		return decompiledLoopRecoveryValue;
 	}
 	
+	/**
+	 * Enable/disable loop boundary condition identification
+	 */
+	public static final String COMPUTE_LOOP_BOUNDARIES = "COMPUTE_LOOP_BOUNDARIES";
+	public static final Boolean COMPUTE_LOOP_BOUNDARIES_DEFAULT = false;
+	private static boolean computeLoopBoundariesDefault = COMPUTE_LOOP_BOUNDARIES_DEFAULT;
+	
+	public static boolean isComputeLoopBoundariesEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return computeLoopBoundariesDefault;
+	}
+	
 	@Override
 	public void initializeDefaultPreferences() {
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
 		preferences.setDefault(RECOVER_DECOMPILED_LOOPS, RECOVER_DECOMPILED_LOOPS_DEFAULT);
+		preferences.setDefault(COMPUTE_LOOP_BOUNDARIES, COMPUTE_LOOP_BOUNDARIES_DEFAULT);
 	}
 	
 	/**
@@ -37,6 +52,7 @@ private static boolean initialized = false;
 		try {
 			IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
 			decompiledLoopRecoveryValue = preferences.getBoolean(RECOVER_DECOMPILED_LOOPS);
+			computeLoopBoundariesDefault = preferences.getBoolean(COMPUTE_LOOP_BOUNDARIES);
 		} catch (Exception e){
 			Log.warning("Error accessing jimple commons analysis preferences, using defaults...", e);
 		}

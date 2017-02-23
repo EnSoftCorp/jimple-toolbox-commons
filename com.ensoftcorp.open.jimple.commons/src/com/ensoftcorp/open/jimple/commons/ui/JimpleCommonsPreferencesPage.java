@@ -18,6 +18,7 @@ import com.ensoftcorp.open.jimple.commons.preferences.JimpleCommonsPreferences;
 public class JimpleCommonsPreferencesPage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
 
 	private static final String RECOVER_DECOMPILED_LOOPS_DESCRIPTION = "Recover decompiled loops";
+	private static final String COMPUTE_LOOP_BOUNDARIES_DESCRIPTION = "Compute loop boundary conditions";
 	
 	private static boolean changeListenerAdded = false;
 	
@@ -46,6 +47,7 @@ public class JimpleCommonsPreferencesPage extends FieldEditorPreferencePage impl
 	@Override
 	protected void createFieldEditors() {
 		addField(new BooleanFieldEditor(JimpleCommonsPreferences.RECOVER_DECOMPILED_LOOPS, "&" + RECOVER_DECOMPILED_LOOPS_DESCRIPTION, getFieldEditorParent()));
+		addField(new BooleanFieldEditor(JimpleCommonsPreferences.COMPUTE_LOOP_BOUNDARIES, "&" + COMPUTE_LOOP_BOUNDARIES_DESCRIPTION, getFieldEditorParent()));
 	}
 
 }
