@@ -67,7 +67,8 @@ private static boolean initialized = false;
 	@Override
 	public void initializeDefaultPreferences() {
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		setDefaults(preferences);
+		preferences.setDefault(RECOVER_DECOMPILED_LOOPS, RECOVER_DECOMPILED_LOOPS_DEFAULT);
+		preferences.setDefault(COMPUTE_LOOP_BOUNDARIES, COMPUTE_LOOP_BOUNDARIES_DEFAULT);
 	}
 	
 	/**
@@ -75,17 +76,9 @@ private static boolean initialized = false;
 	 */
 	public static void restoreDefaults(){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		setDefaults(preferences);
+		preferences.setValue(RECOVER_DECOMPILED_LOOPS, RECOVER_DECOMPILED_LOOPS_DEFAULT);
+		preferences.setValue(COMPUTE_LOOP_BOUNDARIES, COMPUTE_LOOP_BOUNDARIES_DEFAULT);
 		loadPreferences();
-	}
-	
-	/**
-	 * Helper method to set default preferences
-	 * @param preferences
-	 */
-	private static void setDefaults(IPreferenceStore preferences) {
-		preferences.setDefault(RECOVER_DECOMPILED_LOOPS, RECOVER_DECOMPILED_LOOPS_DEFAULT);
-		preferences.setDefault(COMPUTE_LOOP_BOUNDARIES, COMPUTE_LOOP_BOUNDARIES_DEFAULT);
 	}
 	
 	/**
