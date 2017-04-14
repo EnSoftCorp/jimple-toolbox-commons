@@ -22,7 +22,7 @@ private static boolean initialized = false;
 	 */
 	public static void enableDecompiledLoopRecovery(boolean enabled){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(RECOVER_DECOMPILED_LOOPS, enabled);
+		preferences.setValue(RECOVER_DECOMPILED_LOOPS, enabled);
 		loadPreferences();
 	}
 	
@@ -49,7 +49,7 @@ private static boolean initialized = false;
 	 */
 	public static void enableLoopBoundaryAnalysis(boolean enabled){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
-		preferences.setDefault(COMPUTE_LOOP_BOUNDARIES, enabled);
+		preferences.setValue(COMPUTE_LOOP_BOUNDARIES, enabled);
 		loadPreferences();
 	}
 	
