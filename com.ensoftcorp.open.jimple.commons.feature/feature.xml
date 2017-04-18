@@ -2,7 +2,7 @@
 <feature
       id="com.ensoftcorp.open.jimple.commons.feature"
       label="Jimple Toolbox Commons"
-      version="3.0.15.qualifier"
+      version="3.1.0.qualifier"
       provider-name="EnSoft Corp.">
 
    <description url="https://ensoftcorp.github.io/jimple-toolbox-commons">
@@ -43,10 +43,10 @@ SOFTWARE.
    </url>
 
    <requires>
-      <import plugin="com.ensoftcorp.atlas.jimple.core" version="3.0.15" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.atlas.jimple.ui" version="3.0.15" match="greaterOrEqual"/>
-      <import feature="com.ensoftcorp.open.java.commons.feature" version="3.0.15.qualifier"/>
-      <import feature="com.ensoftcorp.open.commons.feature" version="3.0.15.qualifier"/>
+      <import plugin="com.ensoftcorp.atlas.jimple.core" version="3.1.0" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.atlas.jimple.ui" version="3.1.0" match="greaterOrEqual"/>
+      <import feature="com.ensoftcorp.open.java.commons.feature" version="3.1.0.qualifier"/>
+      <import feature="com.ensoftcorp.open.commons.feature" version="3.1.0.qualifier"/>
    </requires>
 
    <plugin
