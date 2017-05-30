@@ -7,6 +7,7 @@ import java.util.Map;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
+import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.atlas.core.markup.Markup;
 import com.ensoftcorp.atlas.core.markup.MarkupProperty;
 import com.ensoftcorp.atlas.core.query.Q;
@@ -49,7 +50,7 @@ public class CFGHighlighter {
 		Q loopHeadersQ = Common.universe().nodesTaggedWithAll(CFGNode.LOOP_HEADER);
 		AtlasSet<Node> loopHeaders = loopHeadersQ.eval().nodes();
 		
-		Map<GraphElement, Color> colorMap = new HashMap<>();
+		Map<GraphElement, Color> colorMap = new HashMap<GraphElement, Color>();
 		for (GraphElement loopHeader : loopHeaders) {
 			Color color = applyHighlightsForLoopDepth(colorMap, loopHeader);
 			m.set(loopHeader, MarkupProperty.NODE_BACKGROUND_COLOR, color);
@@ -74,8 +75,12 @@ public class CFGHighlighter {
 				color = cfgNodeFillColor;
 			} else {
 				GraphElement parentLoopHeader = Query.universe().selectNode(CFGNode.LOOP_HEADER_ID, idObj).eval().nodes().one();
-				color = applyHighlightsForLoopDepth(colorMap, parentLoopHeader);
-				color = color.darker();
+				if(parentLoopHeader != null){
+					color = applyHighlightsForLoopDepth(colorMap, parentLoopHeader);
+					color = color.darker();
+				} else {
+					Log.warning("Parent loop header is null for loop header id: " + idObj);
+				}
 			}
 			colorMap.put(loopHeader, color);
 		}
