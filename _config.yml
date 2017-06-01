@@ -6,7 +6,7 @@
 name: Jimple Toolbox Commons
 
 # Short bio or description (displayed in the header)
-description: A set of common utilities for Jimple (JVM Bytecode) program analysis using Atlas
+description: A collection of utilities for analyzing Jimple (JVM Bytecode)
 
 # URL of your avatar or profile pic (you could use your GitHub profile pic)
 avatar: https://ensoftcorp.github.io/jimple-toolbox-commons/images/toolbox.png
