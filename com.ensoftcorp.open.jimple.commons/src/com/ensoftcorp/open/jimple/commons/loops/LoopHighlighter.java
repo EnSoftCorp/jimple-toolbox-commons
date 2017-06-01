@@ -1,4 +1,4 @@
-package com.ensoftcorp.open.jimple.commons.highlighter;
+package com.ensoftcorp.open.jimple.commons.loops;
 
 import java.awt.Color;
 import java.util.HashMap;
@@ -15,33 +15,17 @@ import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.java.core.script.Common;
 import com.ensoftcorp.open.jimple.commons.loops.DecompiledLoopIdentification.CFGNode;
 
-public class CFGHighlighter {
+public class LoopHighlighter {
 
-	public static final Color cfgDefault = com.ensoftcorp.open.commons.highlighter.CFGHighlighter.cfgDefault;
-	public static final Color cfgTrue = com.ensoftcorp.open.commons.highlighter.CFGHighlighter.cfgTrue;
-	public static final Color cfgFalse = com.ensoftcorp.open.commons.highlighter.CFGHighlighter.cfgFalse;
-	public static final Color cfgExceptional = com.ensoftcorp.open.commons.highlighter.CFGHighlighter.cfgExceptional;
-	
 	/** 
 	 * The default blue fill color for CFG nodes
 	 */
 	public static final Color cfgNodeFillColor = new Color(51, 175, 243);
 	
 	/**
-	 * GRAY  = Unconditional ControlFlow Edge
-	 * WHITE = Conditional True ControlFlow Edge
-	 * BLACK = Conditional False ControlFlow Edge
-	 * BLUE  = Exceptional ControlFlow Edge
-	 * @param m
-	 */
-	public static void applyHighlightsForCFEdges(Markup m) {
-		com.ensoftcorp.open.commons.highlighter.CFGHighlighter.applyHighlightsForCFEdges(m);
-	}
-	
-	/**
-	 * Return marker for Loop Headers and members. Nodes are colored a darker
-	 * color than the normal CFG color, that depend on the nesting depth of the
-	 * loop header.
+	 * Adds markup for loops and loop children. Nodes are colored a darker color
+	 * than the normal CFG color, that depend on the nesting depth of the loop
+	 * header.
 	 * 
 	 * @param cfg
 	 * @return
@@ -50,8 +34,8 @@ public class CFGHighlighter {
 		Q loopHeadersQ = Common.universe().nodesTaggedWithAll(CFGNode.LOOP_HEADER);
 		AtlasSet<Node> loopHeaders = loopHeadersQ.eval().nodes();
 		
-		Map<GraphElement, Color> colorMap = new HashMap<GraphElement, Color>();
-		for (GraphElement loopHeader : loopHeaders) {
+		Map<Node, Color> colorMap = new HashMap<Node, Color>();
+		for (Node loopHeader : loopHeaders) {
 			Color color = applyHighlightsForLoopDepth(colorMap, loopHeader);
 			m.set(loopHeader, MarkupProperty.NODE_BACKGROUND_COLOR, color);
 		}
@@ -66,7 +50,7 @@ public class CFGHighlighter {
 		return m;
 	}
 
-	private static Color applyHighlightsForLoopDepth(Map<GraphElement, Color> colorMap, GraphElement loopHeader) {
+	private static Color applyHighlightsForLoopDepth(Map<Node, Color> colorMap, Node loopHeader) {
 		Color color = colorMap.get(loopHeader);
 		if (color == null) {
 			Object idObj = loopHeader.getAttr(CFGNode.LOOP_MEMBER_ID);
@@ -74,7 +58,7 @@ public class CFGHighlighter {
 				// loop is not nested
 				color = cfgNodeFillColor;
 			} else {
-				GraphElement parentLoopHeader = Query.universe().selectNode(CFGNode.LOOP_HEADER_ID, idObj).eval().nodes().one();
+				Node parentLoopHeader = Query.universe().selectNode(CFGNode.LOOP_HEADER_ID, idObj).eval().nodes().one();
 				if(parentLoopHeader != null){
 					color = applyHighlightsForLoopDepth(colorMap, parentLoopHeader);
 					color = color.darker();

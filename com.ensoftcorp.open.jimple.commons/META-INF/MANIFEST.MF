@@ -10,7 +10,7 @@ Require-Bundle: com.ensoftcorp.atlas.jimple.core;bundle-version="3.1.0";visibili
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Export-Package: com.ensoftcorp.open.jimple.commons.analysis,
- com.ensoftcorp.open.jimple.commons.highlighter,
+ com.ensoftcorp.open.jimple.commons.filters,
  com.ensoftcorp.open.jimple.commons.loops,
  com.ensoftcorp.open.jimple.commons.preferences,
  com.ensoftcorp.open.jimple.commons.wishful
