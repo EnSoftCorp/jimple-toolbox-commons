@@ -1,4 +1,5 @@
 com.ensoftcorp.open.jimple.commons
+com.ensoftcorp.open.jimple.commons.analysis
 com.ensoftcorp.open.jimple.commons.filters
 com.ensoftcorp.open.jimple.commons.filters.rootset
 com.ensoftcorp.open.jimple.commons.log
