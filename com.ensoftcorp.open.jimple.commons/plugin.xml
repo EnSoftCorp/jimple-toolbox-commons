@@ -39,5 +39,10 @@
    <extension point="com.ensoftcorp.open.commons.filter.rootset">
       <rootset class="com.ensoftcorp.open.jimple.commons.filters.rootset.LoopHeadersRootset"></rootset>
    </extension>
+   
+   <!-- adds language specific analyses -->
+   <extension point="com.ensoftcorp.open.commons.language.analysis">
+      <language-specific-analysis class="com.ensoftcorp.open.jimple.commons.analysis.CallSiteAnalysis"></language-specific-analysis>
+   </extension>
 
 </plugin>
