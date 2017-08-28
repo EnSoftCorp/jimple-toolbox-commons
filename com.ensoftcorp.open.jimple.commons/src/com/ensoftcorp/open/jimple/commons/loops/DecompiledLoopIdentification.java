@@ -7,6 +7,8 @@ import java.lang.Thread.State;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -16,8 +18,8 @@ import java.util.Map;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
+import com.ensoftcorp.atlas.core.db.graph.Edge;
 import com.ensoftcorp.atlas.core.db.graph.Graph;
-import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
 import com.ensoftcorp.atlas.core.db.graph.Node;
@@ -25,6 +27,7 @@ import com.ensoftcorp.atlas.core.db.graph.operation.ForwardGraph;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.db.set.SingletonAtlasSet;
+import com.ensoftcorp.atlas.core.index.common.SourceCorrespondence;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.jimple.commons.log.Log;
@@ -115,8 +118,8 @@ public class DecompiledLoopIdentification implements Runnable {
 			Graph cfContextG = resolve(null, u.edgesTaggedWithAny(XCSG.ControlFlow_Edge, XCSG.ExceptionalControlFlow_Edge).eval());
 			AtlasSet<Node> cfRoots = u.nodesTaggedWithAny(XCSG.controlFlowRoot).eval().nodes();
 			int work = (int) cfRoots.size();
-			ArrayList<GraphElement> rootList = new ArrayList<GraphElement>(work);
-			for (GraphElement root : cfRoots){
+			ArrayList<Node> rootList = new ArrayList<Node>(work);
+			for (Node root : cfRoots){
 				rootList.add(root);
 			}
 
@@ -152,34 +155,35 @@ public class DecompiledLoopIdentification implements Runnable {
 		}
 	}
 
-	private AtlasSet<GraphElement> traversed, reentryNodes, reentryEdges, irreducible, loopbacks;
+	private AtlasSet<Node> traversed, reentryNodes, irreducible;
+	private AtlasSet<Edge> reentryEdges, loopbacks;
 	private Graph cfContextG;
 
 	/** The node's position in the DFSP (Depth-first search path) */
-	private Map<GraphElement, Integer> dfsp;
-	private Map<GraphElement, GraphElement> innermostLoopHeaders;
-	private List<GraphElement> cfRoots;
+	private Map<Node, Integer> dfsp;
+	private Map<Node, Node> innermostLoopHeaders;
+	private List<Node> cfRoots;
 	private static int idGenerator;
 	private static Object idGeneratorLock = new Object();
 	private IProgressMonitor monitor;
 
-	private DecompiledLoopIdentification(IProgressMonitor monitor, Graph cfContextG, List<GraphElement> cfRoots) {
+	private DecompiledLoopIdentification(IProgressMonitor monitor, Graph cfContextG, List<Node> cfRoots) {
 		this.monitor = monitor;
 		this.cfContextG = cfContextG;
 		this.cfRoots = cfRoots;
-		traversed = new AtlasHashSet<GraphElement>();
-		reentryNodes = new AtlasHashSet<GraphElement>();
-		reentryEdges = new AtlasHashSet<GraphElement>();
-		irreducible = new AtlasHashSet<GraphElement>();
-		loopbacks = new AtlasHashSet<GraphElement>();
-		dfsp = new HashMap<GraphElement, Integer>();
-		innermostLoopHeaders = new HashMap<GraphElement, GraphElement>();
+		traversed = new AtlasHashSet<Node>();
+		reentryNodes = new AtlasHashSet<Node>();
+		reentryEdges = new AtlasHashSet<Edge>();
+		irreducible = new AtlasHashSet<Node>();
+		loopbacks = new AtlasHashSet<Edge>();
+		dfsp = new HashMap<Node, Integer>();
+		innermostLoopHeaders = new HashMap<Node, Node>();
 	}
 
 	@Override
 	public void run() {
 		// compute individually on a per-function basis
-		for (GraphElement root : cfRoots) {
+		for (Node root : cfRoots) {
 			try {
 				// clear data from previous function
 				reentryNodes.clear();
@@ -190,8 +194,8 @@ public class DecompiledLoopIdentification implements Runnable {
 				loopbacks.clear();
 				dfsp.clear();
 
-				for (GraphElement ge : new ForwardGraph(cfContextG, new SingletonAtlasSet<GraphElement>(root)).nodes()) {
-					dfsp.put(ge, 0);
+				for (Node node : new ForwardGraph(cfContextG, new SingletonAtlasSet<Node>(root)).nodes()) {
+					dfsp.put(node, 0);
 				}
 
 				// run loop identification algorithm
@@ -202,14 +206,35 @@ public class DecompiledLoopIdentification implements Runnable {
 				loopDFSIterative(root, 1); 
 
 				// modify universe graph
-				Collection<GraphElement> loopHeaders = innermostLoopHeaders.values();
-				AtlasSet<GraphElement> loopHeadersSet = new AtlasHashSet<GraphElement>();
+				Collection<Node> loopHeaders = innermostLoopHeaders.values();
+				AtlasSet<Node> loopHeadersSet = new AtlasHashSet<Node>();
 				loopHeadersSet.addAll(loopHeaders);
+				
+				ArrayList<Node> sortedLoopHeaders = new ArrayList<Node>((int) loopHeadersSet.size());
+				for(Node loopHeader : loopHeadersSet){
+					sortedLoopHeaders.add(loopHeader);
+				}
+				Collections.sort(sortedLoopHeaders, new Comparator<Node>(){
+					@Override
+					public int compare(Node n1, Node n2) {
+						SourceCorrespondence n1SC = (SourceCorrespondence) n1.getAttr(XCSG.sourceCorrespondence);
+						SourceCorrespondence n2SC = (SourceCorrespondence) n2.getAttr(XCSG.sourceCorrespondence);
+						if(n1SC.sourceFile.equals(n2SC.sourceFile)){
+							// same file, sort by source offset
+							return Integer.compare(n1SC.offset, n2SC.offset);
+						} else {
+							// files are not the same sort broadly by file name
+							String path1 = n1SC.sourceFile.getLocation().toOSString();
+							String path2 = n2SC.sourceFile.getLocation().toOSString();
+							return path1.compareTo(path2);
+						}
+					}
+				});
 
-				Map<GraphElement, Integer> loopHeaderToID = new HashMap<GraphElement, Integer>((int) loopHeadersSet.size());
+				Map<Node, Integer> loopHeaderToID = new HashMap<Node, Integer>((int) loopHeadersSet.size());
 
 				synchronized (idGeneratorLock) {
-					for (GraphElement header : loopHeadersSet) {
+					for (Node header : sortedLoopHeaders) {
 						int id = idGenerator++;
 						loopHeaderToID.put(header, id);
 						header.tag(CFGNode.LOOP_HEADER);
@@ -223,23 +248,22 @@ public class DecompiledLoopIdentification implements Runnable {
 					}
 				}
 
-				for (GraphElement cfgNode : innermostLoopHeaders.keySet()) {
-					GraphElement loopHeader = innermostLoopHeaders.get(cfgNode);
+				for (Node cfgNode : innermostLoopHeaders.keySet()) {
+					Node loopHeader = innermostLoopHeaders.get(cfgNode);
 					cfgNode.putAttr(CFGNode.LOOP_MEMBER_ID, loopHeaderToID.get(loopHeader));
-					GraphElement edge = Graph.U.createEdge(loopHeader, cfgNode);
+					Edge edge = Graph.U.createEdge(loopHeader, cfgNode);
 					edge.tag(XCSG.LoopChild);
-
 				}
 
-				for (GraphElement reentryNode : reentryNodes) {
+				for (Node reentryNode : reentryNodes) {
 					reentryNode.tag(CFGNode.LOOP_REENTRY_NODE);
 				}
 
-				for (GraphElement reentryEdge : reentryEdges) {
+				for (Edge reentryEdge : reentryEdges) {
 					reentryEdge.tag(CFGEdge.LOOP_REENTRY_EDGE);
 				}
 
-				for (GraphElement loopbackEdge : loopbacks) {
+				for (Edge loopbackEdge : loopbacks) {
 					loopbackEdge.tag(CFGEdge.LOOP_BACK_EDGE);
 				}
 			} catch (Throwable t) {
@@ -264,18 +288,18 @@ public class DecompiledLoopIdentification implements Runnable {
 	 * @return
 	 */
 	@SuppressWarnings("unused")
-	private void loopDFSRecursive(GraphElement b0, int position) {
+	private void loopDFSRecursive(Node b0, int position) {
 		traversed.add(b0);
 		dfsp.put(b0, position);
 
-		for (GraphElement cfgEdge : cfContextG.edges(b0, NodeDirection.OUT)) {
-			GraphElement b = cfgEdge.getNode(EdgeDirection.TO);
+		for (Edge cfgEdge : cfContextG.edges(b0, NodeDirection.OUT)) {
+			Node b = cfgEdge.getNode(EdgeDirection.TO);
 
 			if (!traversed.contains(b)) {
 				// Paper Case A
 				// new
 				loopDFSRecursive(b, position + 1);
-				GraphElement nh = innermostLoopHeaders.get(b);
+				Node nh = innermostLoopHeaders.get(b);
 				tag_lhead(b0, nh);
 			} else {
 				if (dfsp.get(b) > 0) {
@@ -284,7 +308,7 @@ public class DecompiledLoopIdentification implements Runnable {
 					loopbacks.add(cfgEdge);
 					tag_lhead(b0, b);
 				} else {
-					GraphElement h = innermostLoopHeaders.get(b);
+					Node h = innermostLoopHeaders.get(b);
 					if (h == null) {
 						// Paper Case C
 						// do nothing
@@ -317,15 +341,15 @@ public class DecompiledLoopIdentification implements Runnable {
 		dfsp.put(b0, 0);
 	}
 
-	private void tag_lhead(GraphElement b, GraphElement h) {
+	private void tag_lhead(Node b, Node h) {
 		if (h == null || h.equals(b)){
 			return;
 		}
 		
-		GraphElement cur1 = b;
-		GraphElement cur2 = h;
+		Node cur1 = b;
+		Node cur2 = h;
 
-		GraphElement ih;
+		Node ih;
 		while ((ih = innermostLoopHeaders.get(cur1)) != null) {
 			if (ih.equals(cur2)){
 				return;
@@ -345,10 +369,10 @@ public class DecompiledLoopIdentification implements Runnable {
 
 	private static class Frame {
 		int programCounter = 0;
-		GraphElement b = null;
-		GraphElement b0 = null;
+		Node b = null;
+		Node b0 = null;
 		int position = 0;
-		Iterator<GraphElement> iterator = null;
+		Iterator<Edge> iterator = null;
 	}
 
 	static private final int ENTER = 0;
@@ -362,7 +386,7 @@ public class DecompiledLoopIdentification implements Runnable {
 	 * @param position
 	 * @return
 	 */
-	private void loopDFSIterative(GraphElement _b0, int _position) {
+	private void loopDFSIterative(Node _b0, int _position) {
 		stack.clear();
 
 		Frame f = new Frame();
@@ -377,7 +401,7 @@ public class DecompiledLoopIdentification implements Runnable {
 
 			switch (f.programCounter) {
 				case POP: {
-					GraphElement nh = innermostLoopHeaders.get(f.b);
+					Node nh = innermostLoopHeaders.get(f.b);
 					tag_lhead(f.b0, nh);
 					f.programCounter = EACH_CFG_EDGE;
 					continue stack;
@@ -389,7 +413,7 @@ public class DecompiledLoopIdentification implements Runnable {
 					// FALL THROUGH
 				case EACH_CFG_EDGE:
 					while (f.iterator.hasNext()) {
-						GraphElement cfgEdge = f.iterator.next();
+						Edge cfgEdge = f.iterator.next();
 						f.b = cfgEdge.getNode(EdgeDirection.TO);
 						if (!traversed.contains(f.b)) {
 							// Paper Case A
@@ -408,7 +432,7 @@ public class DecompiledLoopIdentification implements Runnable {
 							continue stack;
 	
 							// case POP:
-							// GraphElement nh = innermostLoopHeaders.get(b);
+							// Node nh = innermostLoopHeaders.get(b);
 							// tag_lhead(b0, nh);
 	
 							// END CONVERTED TO ITERATIVE
@@ -419,7 +443,7 @@ public class DecompiledLoopIdentification implements Runnable {
 								loopbacks.add(cfgEdge);
 								tag_lhead(f.b0, f.b);
 							} else {
-								GraphElement h = innermostLoopHeaders.get(f.b);
+								Node h = innermostLoopHeaders.get(f.b);
 								if (h == null) {
 									// Paper Case C
 									// do nothing
