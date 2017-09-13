@@ -21,6 +21,15 @@ If you want to install from source for bleeding edge changes, first grab a copy 
 ## Changelog
 Note that version numbers are based off [Atlas](http://www.ensoftcorp.com/atlas/download/) version numbers.
 
+### 3.1.7
+- Updates to depedencies
+
+### 3.1.6
+- Added loop filter
+- Modified DLI algorithm to deterministically label loop headers
+- Language agnostic callsite analysis handler
+- Standarized highlighter logic
+
 ### 3.1.0
 - Added callsite analysis implementation
 - Added loop depth highlighter
