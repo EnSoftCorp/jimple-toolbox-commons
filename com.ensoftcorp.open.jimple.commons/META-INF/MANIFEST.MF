@@ -4,7 +4,16 @@ Bundle-Name: Jimple Toolbox Commons
 Bundle-SymbolicName: com.ensoftcorp.open.jimple.commons;singleton:=true
 Bundle-Version: 3.1.7.qualifier
 Bundle-Activator: com.ensoftcorp.open.jimple.commons.Activator
-Require-Bundle: com.ensoftcorp.atlas.jimple.core;bundle-version="3.1.7";visibility:=reexport,
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.jdt,
+ org.eclipse.jdt.core,
+ org.eclipse.jdt.launching,
+ ca.mcgill.sable.soot;bundle-version="2.5.2",
+ ca.mcgill.sable.soot.lib;bundle-version="2.5.2",
+ com.ensoftcorp.abp;bundle-version="3.1.7",
+ com.ensoftcorp.abp.common;bundle-version="3.1.7",
+ com.ensoftcorp.atlas.jimple.core;bundle-version="3.1.7";visibility:=reexport,
  com.ensoftcorp.atlas.jimple.ui;bundle-version="3.1.7";visibility:=reexport,
  com.ensoftcorp.open.java.commons;bundle-version="3.1.7"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
@@ -13,4 +22,6 @@ Export-Package: com.ensoftcorp.open.jimple.commons.analysis,
  com.ensoftcorp.open.jimple.commons.filters,
  com.ensoftcorp.open.jimple.commons.loops,
  com.ensoftcorp.open.jimple.commons.preferences,
+ com.ensoftcorp.open.jimple.commons.transform,
+ com.ensoftcorp.open.jimple.commons.transform.transforms,
  com.ensoftcorp.open.jimple.commons.wishful
