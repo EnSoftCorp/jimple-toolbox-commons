@@ -108,27 +108,30 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 						// map each method body unit to its corresponding atlas CFG node
 						Chain<Unit> methodBodyUnits = methodBody.getUnits();
 						HashMap<Unit,Node> atlasCorrespondence = new HashMap<Unit,Node>();
-						int i = 1;
 						
-						// Using snapshopIterator avoids ConcurrentModificationException
-						// form being thrown.
-						Iterator<Unit> statementIterator = methodBodyUnits.snapshotIterator();
-						
-						while (statementIterator.hasNext()){
-							Unit statement = statementIterator.next();
-							
-							try {
-								Log.info(i + ") " + statement.toString());
-								Node cfgNode = getMethodBodyStatement(i++);
-								atlasCorrespondence.put(statement, cfgNode);
-								Log.info("Mapped: " + statement.toString() + " to " + cfgNode.getAttr(XCSG.name));
-							} catch (Exception e){
-								Log.warning("Debug", e);
+						if(methodBodyUnits.size() != cfgNodeSourceOrdering.size()){
+							Log.warning("Unequal number of statements!"
+									+ "\nSoot Statements: " + methodBodyUnits.size()
+									+ "\nAtlas Statements: " + cfgNodeSourceOrdering.size());
+						} else {
+							// Using snapshopIterator avoids ConcurrentModificationException
+							// form being thrown.
+							Iterator<Unit> statementIterator = methodBodyUnits.snapshotIterator();
+							int i = 0;
+							while (statementIterator.hasNext()){
+								Unit statement = statementIterator.next();
+								try {
+									Node cfgNode = getMethodBodyStatement(i++);
+									atlasCorrespondence.put(statement, cfgNode);
+									Log.info("Mapped: " + statement.toString() + " to " + cfgNode.getAttr(XCSG.name));
+								} catch (Exception e){
+									Log.warning("Error mapping soot statement to Atlas CFG node", e);
+								}
 							}
+							
+							// pass on the transformation duties to the implementer of this transformation
+							transform(methodBody, atlasCorrespondence);
 						}
-						
-						// pass on the transformation duties to the implementer of this transformation
-						transform(methodBody, atlasCorrespondence);
 					}
 				}
 			}
