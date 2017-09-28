@@ -82,7 +82,7 @@ public class JimpleStopGap {
 			dataFlowDisplayNodesToUntag.add(dataFlowDisplayNode);
 		}
 		while (!dataFlowDisplayNodesToUntag.isEmpty()) {
-			Node dataFlowDisplayNode = dataFlowDisplayNodesToUntag.getFirst();
+			Node dataFlowDisplayNode = dataFlowDisplayNodesToUntag.one();
 			dataFlowDisplayNodesToUntag.remove(dataFlowDisplayNode);
 			dataFlowDisplayNode.tags().remove(DATAFLOW_DISPLAY_NODE);
 		}
