@@ -85,7 +85,7 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 	}
 	
 	@Override
-	protected void internalTransform(Body methodBody, String phaseName, Map options) {
+	protected void internalTransform(Body methodBody, String phaseName, @SuppressWarnings("rawtypes") Map options) {
 		SootMethod sootMethod = methodBody.getMethod();
 		SootClass sootClass = sootMethod.getDeclaringClass();
 		
@@ -97,9 +97,10 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 			String atlasClassName = classNode.getAttr(XCSG.name).toString();
 			if(sootClassName.equals(atlasClassName)){
 				
-				// using signatures would be nice if they were formatted the same, but they arn't...
-				String sootMethodSignature = sootMethod.getSignature();
-				String atlasMethodSignature = methodNode.getAttr("##signature").toString();
+				// TODO: figure out how we could just match by signature instead
+//				// using signatures would be nice if they were formatted the same, but they arn't...
+//				String sootMethodSignature = sootMethod.getSignature();
+//				String atlasMethodSignature = methodNode.getAttr("##signature").toString();
 				
 				String sootMethodName = sootMethod.getName();
 				String atlasMethodName = methodNode.getAttr(XCSG.name).toString();

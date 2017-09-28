@@ -5,12 +5,9 @@ import java.util.Map;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.script.Common;
-import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.jimple.commons.log.Log;
 
 import soot.Body;
-import soot.SootClass;
-import soot.SootMethod;
 import soot.Unit;
 import soot.util.Chain;
 

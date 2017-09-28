@@ -1,7 +1,5 @@
 package com.ensoftcorp.open.jimple.commons.transform.transforms;
 
-import com.ensoftcorp.atlas.java.core.script.Common;
-
 import soot.SceneTransformer;
 import soot.Transform;
 

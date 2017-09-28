@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.TreeSet;
 
-import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.IJavaProject;
@@ -20,11 +19,9 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 
 import com.ensoftcorp.abp.common.soot.ConfigManager;
-import com.ensoftcorp.atlas.java.core.script.Common;
 import com.ensoftcorp.open.commons.utilities.DisplayUtils;
 import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
 import com.ensoftcorp.open.jimple.commons.log.Log;
-import com.ensoftcorp.open.jimple.commons.transform.transforms.PrintSelectedMethodCFGTransform;
 
 import soot.G;
 import soot.PackManager;
