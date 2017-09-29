@@ -138,6 +138,8 @@ public class Compilation {
 		// try to preserve as much of the original implementation as possible
 		argList.add("--p");argList.add("jb");argList.add("use-original-names:true");
         argList.add("--p");argList.add("jb");argList.add("stabilize-local-names:true");
+        argList.add("-keep-bytecode-offset");
+        argList.add("-keep-line-number");
 		
 		// need to specifically enalbe using ASM over deprecated Jasmine library
 		argList.add("-asm-backend");
@@ -162,7 +164,8 @@ public class Compilation {
 			// run soot
 			soot.Main.v().run(sootArgs);
 			
-			Log.info("Compiled Jimple to Jar: " + outputJar.getCanonicalPath());
+			// debug
+//			Log.info("Compiled Jimple to Jar: " + outputJar.getCanonicalPath());
 		} catch (Throwable t){
 			DisplayUtils.showError(t, "An error occurred compiling Jimple to class files.");
 			Log.error("An error occurred processing Jimple.\n\nSoot Arguments: " + Arrays.toString(sootArgs), t);
