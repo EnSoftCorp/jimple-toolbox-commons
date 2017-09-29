@@ -75,6 +75,21 @@ public class Compilation {
 	 * @throws CoreException 
 	 */
 	public static void compile(IProject project, File jimpleDirectory, File outputJar, Transform... transforms) throws IOException, CoreException {
+		compile(project, jimpleDirectory, outputJar, false, transforms);
+	}
+	
+	
+	/**
+	 * Compiles a Jimple in a project to an output JAR file
+	 * @param project The project to compile
+	 * @param jimpleDirectory The directory path containing the jimple source (example: "sootOutput" or "WEB-INF/jimple"), otherwise null
+	 * @param outputJar The location to output the resulting jar
+	 * @param allowPhantomReferences allows phantom references to exist
+	 * @param transforms An array of transformations to apply during compilation, if non pass empty array or null
+	 * @throws IOException
+	 * @throws CoreException 
+	 */
+	public static void compile(IProject project, File jimpleDirectory, File outputJar, boolean allowPhantomReferences, Transform... transforms) throws IOException, CoreException {
 		// make sure there is a directory to write the output to
 		File outputDirectory = outputJar.getParentFile();
 		if(!outputDirectory.exists()){
@@ -100,15 +115,36 @@ public class Compilation {
 		
 		// configure soot arguments
 		ArrayList<String> argList = new ArrayList<String>();
+		
+		// take jimple as input
 		argList.add("-src-prec"); argList.add("jimple");
-//		argList.add("--xml-attributes");
-		argList.add("-f"); argList.add("class");
-		argList.add("-cp"); argList.add(classpath.toString());
-//		argList.add("-allow-phantom-refs");
-		argList.add("-output-dir"); argList.add(outputJar.getCanonicalPath()); argList.add("-output-jar");
+		
+		// specify the input directory of class files
+		// consider all specified classes
 		argList.add("-process-dir"); argList.add(inputDirectory.getCanonicalPath());
 		argList.add("-include-all");
-//		argList.add("-keep-line-number");
+
+		// set the classpath
+		argList.add("-cp"); argList.add(classpath.toString());
+		
+		// optionally allow phantom references to exist
+		if(allowPhantomReferences){
+			argList.add("-allow-phantom-refs");
+		}
+		
+		// output class files
+		argList.add("-output-format"); argList.add("class");
+		
+		// try to preserve as much of the original implementation as possible
+		argList.add("--p");argList.add("jb");argList.add("use-original-names:true");
+        argList.add("--p");argList.add("jb");argList.add("stabilize-local-names:true");
+		
+		// need to specifically enalbe using ASM over deprecated Jasmine library
+		argList.add("-asm-backend");
+		
+		// output classes to a jar file
+		argList.add("-output-dir"); argList.add(outputJar.getCanonicalPath()); argList.add("-output-jar");
+		
 		String[] sootArgs = argList.toArray(new String[argList.size()]);
 
 		// run soot to compile jimple
@@ -116,18 +152,20 @@ public class Compilation {
 			ConfigManager.getInstance().startTempConfig();
 			G.reset();
 			
+			// register all the bytecode transformations to perform
 			if(transforms != null){
 				for(Transform transform : transforms){
 					PackManager.v().getPack("jtp").add(transform);
 				}
 			}
 			
-//			soot.options.Options.v().set_keep_line_number(true);
-			
+			// run soot
 			soot.Main.v().run(sootArgs);
+			
+			Log.info("Compiled Jimple to Jar: " + outputJar.getCanonicalPath());
 		} catch (Throwable t){
-			DisplayUtils.showError(t, "An error occurred processing Jimple.\n\nSoot Classpath: " + Arrays.toString(sootArgs));
-			Log.error("An error occurred processing Jimple.\n\nSoot Classpath: " + Arrays.toString(sootArgs), t);
+			DisplayUtils.showError(t, "An error occurred compiling Jimple to class files.");
+			Log.error("An error occurred processing Jimple.\n\nSoot Arguments: " + Arrays.toString(sootArgs), t);
 		} finally {
 			// restore the saved config (even if there was an error)
             ConfigManager.getInstance().endTempConfig();
