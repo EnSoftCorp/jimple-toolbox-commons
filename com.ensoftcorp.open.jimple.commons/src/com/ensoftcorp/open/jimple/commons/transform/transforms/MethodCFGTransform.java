@@ -126,7 +126,8 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 								try {
 									Node cfgNode = getMethodBodyStatement(i++);
 									atlasCorrespondence.put(statement, cfgNode);
-									Log.info("Mapped: " + statement.toString() + " to " + cfgNode.getAttr(XCSG.name));
+									// debug
+//									Log.info("Mapped: " + statement.toString() + " to " + cfgNode.getAttr(XCSG.name));
 								} catch (Exception e){
 									Log.warning("Error mapping soot statement to Atlas CFG node", e);
 								}
