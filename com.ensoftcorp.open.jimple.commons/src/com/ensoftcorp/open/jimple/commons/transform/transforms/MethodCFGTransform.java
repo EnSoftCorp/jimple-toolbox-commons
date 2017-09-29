@@ -2,6 +2,7 @@ package com.ensoftcorp.open.jimple.commons.transform.transforms;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Map;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.index.common.SourceCorrespondence;
+import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.utilities.NodeSourceCorrespondenceSorter;
@@ -105,7 +107,7 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 				String sootMethodName = sootMethod.getName();
 				String atlasMethodName = methodNode.getAttr(XCSG.name).toString();
 				if(sootMethodName.equals(atlasMethodName)){
-					if(parametersMatch(sootMethod.getParameterTypes(), methodNode)){
+					if(parametersMatch(new ArrayList<Type>(sootMethod.getParameterTypes()), methodNode)){
 						// map each method body unit to its corresponding atlas CFG node
 						Chain<Unit> methodBodyUnits = methodBody.getUnits();
 						HashMap<Unit,Node> atlasCorrespondence = new HashMap<Unit,Node>();
@@ -139,8 +141,67 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 		}
 	}
 	
-	private boolean parametersMatch(List<Type> parameterTypes, Node methodNode) {
-		return true; // TODO: implement
+	private boolean parametersMatch(ArrayList<Type> sootParameterTypes, Node atlasMethodNode) {
+		Q parameterEdges = Common.universe().edges(XCSG.HasParameter);
+		AtlasSet<Node> atlasMethodParameters = parameterEdges.successors(Common.toQ(methodNode)).eval().nodes();
+		
+		// cheap check, should have the same number of parameters
+		if(sootParameterTypes.size() != atlasMethodParameters.size()){
+			return false;
+		}
+		
+		// parameters should match types in the order parameters are specified
+		ArrayList<Node> atlasSortedMethodParameters = new ArrayList<Node>((int) atlasMethodParameters.size());
+		for(Node atlasMethodParameter : atlasMethodParameters){
+			atlasSortedMethodParameters.add(atlasMethodParameter);
+		}
+		Collections.sort(atlasSortedMethodParameters, new Comparator<Node>(){
+			@Override
+			public int compare(Node p1, Node p2) {
+				Integer p1Index = Integer.parseInt(p1.getAttr(XCSG.parameterIndex).toString());
+				Integer p2Index = Integer.parseInt(p2.getAttr(XCSG.parameterIndex).toString());
+				return p1Index.compareTo(p2Index);
+			}
+		});
+		
+		for(int i=0; i<atlasSortedMethodParameters.size(); i++){
+			Type sootMethodParameterType = sootParameterTypes.get(i);
+			Node atlasMethodParameter = atlasSortedMethodParameters.get(i);
+			
+			Q typeOfEdges = Common.universe().edges(XCSG.TypeOf);
+			Node atlasMethodParameterType = typeOfEdges.successors(Common.toQ(atlasMethodParameter)).eval().nodes().one();
+			if(atlasMethodParameterType == null){
+				Log.warning("Method parameter " + atlasMethodParameter.address().toAddressString() + " has no type.");
+				return false;
+			} else {
+				String qualifiedSootParameterType = sootMethodParameterType.toString();
+				String qualifiedAtlasParameterType = atlasMethodParameterType.getAttr(XCSG.name).toString();
+				
+				// check if Atlas node is an array type
+				if(atlasMethodParameterType.taggedWith(XCSG.ArrayType)){
+					Q arrayElementTypeEdges = Common.universe().edges(XCSG.ArrayElementType);
+					Node arrayType = atlasMethodParameterType;
+					atlasMethodParameterType = arrayElementTypeEdges.successors(Common.toQ(arrayType)).eval().nodes().one();
+					if(atlasMethodParameterType == null){
+						Log.warning("Array type " + arrayType.address().toAddressString() + " has no array element type.");
+					}
+				}
+				
+				// add the Atlas type package qualification
+				Node atlasParameterTypePackage = Common.toQ(atlasMethodParameterType).containers().nodes(XCSG.Package).eval().nodes().one();
+				if(atlasParameterTypePackage == null){
+					Log.warning("Method parameter type " + atlasMethodParameterType.address().toAddressString() + " has no package.");
+					return false;
+				} else {
+					qualifiedAtlasParameterType = atlasParameterTypePackage.getAttr(XCSG.name) + "." + qualifiedAtlasParameterType;
+				}
+				if(!qualifiedSootParameterType.equals(qualifiedAtlasParameterType)){
+					return false;
+				}
+			}
+		}
+		
+		return true;
 	}
 
 	/**
