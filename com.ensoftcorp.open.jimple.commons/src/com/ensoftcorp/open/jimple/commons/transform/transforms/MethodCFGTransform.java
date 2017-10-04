@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.ensoftcorp.atlas.core.db.graph.Node;
+import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.index.common.SourceCorrespondence;
 import com.ensoftcorp.atlas.core.query.Q;
@@ -43,12 +44,17 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 	protected Node packageNode;
 	protected AtlasSet<Node> cfgNodes;
 	protected ArrayList<Node> cfgNodeSourceOrdering;
+	protected AtlasSet<Node> restrictedRegion;
 	
 	public MethodCFGTransform(String phaseName, Node method) {
 		if(phaseName == null){
 			throw new IllegalArgumentException("Phase name cannot be null");
 		}
 		this.phaseName = phaseName;
+		
+		if(!method.taggedWith(XCSG.Language.Jimple)){
+			throw new IllegalArgumentException("The method parameter must be an XCSG.Language.Jimple node.");
+		}
 		
 		if(!method.taggedWith(XCSG.Method)){
 			throw new IllegalArgumentException("The method parameter must be an XCSG.Method node.");
@@ -57,23 +63,28 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 		this.methodNode = method;
 		
 		// grab the container class node
-		this.classNode = Common.toQ(method).parent().nodes(XCSG.Java.Class).eval().nodes().one();
+		this.classNode = Common.toQ(method).parent().nodes(XCSG.Java.Class).nodes(XCSG.Language.Jimple).eval().nodes().one();
 		if(classNode == null){
 			throw new IllegalArgumentException("Method node [" + methodNode.address().toAddressString() + "] is not contained in an XCSG.Java.Class node.");
 		}
 		
 		// grab the container package node
-		this.packageNode = Common.toQ(classNode).parent().nodes(XCSG.Package).eval().nodes().one();
+		this.packageNode = Common.toQ(classNode).parent().nodes(XCSG.Package).nodes(XCSG.Language.Jimple).eval().nodes().one();
 		if(packageNode == null){
 			throw new IllegalArgumentException("Class node [" + classNode.address().toAddressString() + "] is not contained in an XCSG.Pacakge node.");
 		}
-		this.cfgNodes = CommonQueries.cfg(method).eval().nodes();
+		this.cfgNodes = CommonQueries.cfg(method).nodes(XCSG.Language.Jimple).eval().nodes();
 		
 		// assert each CFG node has a source correspondence
+		restrictedRegion = new AtlasHashSet<Node>();
 		for(Node cfgNode : cfgNodes){
 			SourceCorrespondence sc = (SourceCorrespondence) cfgNode.getAttr(XCSG.sourceCorrespondence);
 			if(sc == null){
 				throw new IllegalArgumentException("CFG Node [" + cfgNode.address().toAddressString() + "] is missing a source correspondence.");
+			}
+			String jimpleStatementText = cfgNode.getAttr(XCSG.name).toString();
+			if(jimpleStatementText.contains(" := @this") || jimpleStatementText.contains(" := @parameter") || jimpleStatementText.contains(":= @caughtexception")){
+				restrictedRegion.add(cfgNode);
 			}
 		}
 		
@@ -99,7 +110,7 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 			String atlasClassName = classNode.getAttr(XCSG.name).toString();
 			if(sootClassName.equals(atlasClassName)){
 				
-				// TODO: figure out how we could just match by signature instead
+				// TODO: would be nice to figure out how we could just match by signature instead
 //				// using signatures would be nice if they were formatted the same, but they arn't...
 //				String sootMethodSignature = sootMethod.getSignature();
 //				String atlasMethodSignature = methodNode.getAttr("##signature").toString();

@@ -79,6 +79,7 @@ public class Compilation {
 	}
 	
 	
+	
 	/**
 	 * Compiles a Jimple in a project to an output JAR file
 	 * @param project The project to compile
@@ -89,7 +90,12 @@ public class Compilation {
 	 * @throws IOException
 	 * @throws CoreException 
 	 */
+	
 	public static void compile(IProject project, File jimpleDirectory, File outputJar, boolean allowPhantomReferences, Transform... transforms) throws IOException, CoreException {
+		compile(project, jimpleDirectory, outputJar, false, true, transforms);
+	}
+	
+	public static void compile(IProject project, File jimpleDirectory, File outputJar, boolean allowPhantomReferences, boolean outputBytecode, Transform... transforms) throws IOException, CoreException {
 		// make sure there is a directory to write the output to
 		File outputDirectory = outputJar.getParentFile();
 		if(!outputDirectory.exists()){
@@ -132,8 +138,8 @@ public class Compilation {
 			argList.add("-allow-phantom-refs");
 		}
 		
-		// output class files
-		argList.add("-output-format"); argList.add("class");
+		// output class or jimple files
+		argList.add("-output-format"); argList.add(outputBytecode ? "class" : "jimple");
 		
 		// try to preserve as much of the original implementation as possible
 		argList.add("--p");argList.add("jb");argList.add("use-original-names:true");
