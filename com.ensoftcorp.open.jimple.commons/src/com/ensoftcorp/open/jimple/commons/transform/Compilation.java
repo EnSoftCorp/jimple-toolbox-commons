@@ -173,8 +173,13 @@ public class Compilation {
 			// debug
 //			Log.info("Compiled Jimple to Jar: " + outputJar.getCanonicalPath());
 		} catch (Throwable t){
-			DisplayUtils.showError(t, "An error occurred compiling Jimple to class files.");
-			Log.error("An error occurred processing Jimple.\n\nSoot Arguments: " + Arrays.toString(sootArgs), t);
+			String message = "An error occurred compiling Jimple to class files.";
+			if(!outputBytecode){
+				message = "An error occurred while transforming Jimple files.";
+			}
+			Exception trace = new RuntimeException(t);
+			DisplayUtils.showError(trace, message);
+			Log.error("An error occurred processing Jimple.\n\nSoot Arguments: " + Arrays.toString(sootArgs), trace);
 		} finally {
 			// restore the saved config (even if there was an error)
             ConfigManager.getInstance().endTempConfig();
