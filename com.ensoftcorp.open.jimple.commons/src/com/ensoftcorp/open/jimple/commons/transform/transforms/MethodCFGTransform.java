@@ -189,6 +189,11 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 				String qualifiedSootParameterType = sootMethodParameterType.toString();
 				String qualifiedAtlasParameterType = atlasMethodParameterType.getAttr(XCSG.name).toString();
 				
+				// primitives are unqualified
+				if(qualifiedSootParameterType.equals(qualifiedAtlasParameterType)){
+					return true;
+				}
+				
 				// check if Atlas node is an array type
 				if(atlasMethodParameterType.taggedWith(XCSG.ArrayType)){
 					Q arrayElementTypeEdges = Common.universe().edges(XCSG.ArrayElementType);
@@ -199,16 +204,18 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 					}
 				}
 				
-				// add the Atlas type package qualification
-				Node atlasParameterTypePackage = Common.toQ(atlasMethodParameterType).containers().nodes(XCSG.Package).eval().nodes().one();
-				if(atlasParameterTypePackage == null){
-					Log.warning("Method parameter type " + atlasMethodParameterType.address().toAddressString() + " has no package.");
-					return false;
-				} else {
-					qualifiedAtlasParameterType = atlasParameterTypePackage.getAttr(XCSG.name) + "." + qualifiedAtlasParameterType;
-				}
-				if(!qualifiedSootParameterType.equals(qualifiedAtlasParameterType)){
-					return false;
+				if(!atlasMethodParameterType.taggedWith(XCSG.Primitive)){
+					// add the Atlas type package qualification
+					Node atlasParameterTypePackage = Common.toQ(atlasMethodParameterType).containers().nodes(XCSG.Package).eval().nodes().one();
+					if(atlasParameterTypePackage == null){
+						Log.warning("Method parameter type " + atlasMethodParameterType.address().toAddressString() + " has no package.");
+						return false;
+					} else {
+						qualifiedAtlasParameterType = atlasParameterTypePackage.getAttr(XCSG.name) + "." + qualifiedAtlasParameterType;
+					}
+					if(!qualifiedSootParameterType.equals(qualifiedAtlasParameterType)){
+						return false;
+					}
 				}
 			}
 		}
