@@ -230,6 +230,9 @@ public class Compilation {
 	// returns the common parent of all discovered jimple files
 	public static File getJimpleDirectory(File projectDirectory) throws IOException {
 		LinkedList<File> jimpleFiles = findJimple(projectDirectory);
+		if(jimpleFiles.isEmpty()){
+			throw new RuntimeException("Project does not contain Jimple files.");
+		}
 		return commonParent(jimpleFiles.toArray(new File[jimpleFiles.size()]));
 	}
 	
