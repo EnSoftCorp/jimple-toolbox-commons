@@ -163,6 +163,12 @@ public class Compilation {
 			// register all the bytecode transformations to perform
 			if(transforms != null){
 				for(Transform transform : transforms){
+					// seems resetting is not clearing out old transforms...
+					// so first remove it then added it
+					// TODO: figure out why we need this hack...
+					PackManager.v().getPack("jtp").remove(transform.getPhaseName());
+					
+					// add the transform to the jimple transformation pack
 					PackManager.v().getPack("jtp").add(transform);
 				}
 			}
