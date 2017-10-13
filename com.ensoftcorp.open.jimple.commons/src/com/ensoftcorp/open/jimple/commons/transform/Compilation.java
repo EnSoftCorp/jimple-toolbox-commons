@@ -10,16 +10,11 @@ import java.util.TreeSet;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.IJavaProject;
-//import org.eclipse.jdt.core.IJavaProject;
-//import org.eclipse.jdt.core.IPackageFragmentRoot;
-//import org.eclipse.jdt.core.JavaCore;
-//import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 
 import com.ensoftcorp.abp.common.soot.ConfigManager;
-import com.ensoftcorp.open.commons.utilities.DisplayUtils;
 import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
 import com.ensoftcorp.open.jimple.commons.log.Log;
 
@@ -178,9 +173,9 @@ public class Compilation {
 			if(!outputBytecode){
 				message = "An error occurred while transforming Jimple files.";
 			}
-			Exception trace = new RuntimeException(t);
-			DisplayUtils.showError(trace, message);
+			RuntimeException trace = new RuntimeException(t);
 			Log.error("An error occurred processing Jimple.\n\nSoot Arguments: " + Arrays.toString(sootArgs), trace);
+			throw trace;
 		} finally {
 			// restore the saved config (even if there was an error)
             ConfigManager.getInstance().endTempConfig();
