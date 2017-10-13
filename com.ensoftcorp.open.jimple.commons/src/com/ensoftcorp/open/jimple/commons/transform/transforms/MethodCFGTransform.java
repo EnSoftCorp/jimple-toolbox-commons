@@ -49,7 +49,7 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 		if(phaseName == null){
 			throw new IllegalArgumentException("Phase name cannot be null");
 		}
-		this.phaseName = phaseName;
+		this.phaseName = phaseName + "-" + CommonQueries.getQualifiedMethodName(method);
 		
 		if(!method.taggedWith(XCSG.Language.Jimple)){
 			throw new IllegalArgumentException("The method parameter must be an XCSG.Language.Jimple node.");
@@ -68,7 +68,7 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 		}
 		
 		// grab the container package node
-		this.packageNode = Common.toQ(classNode).parent().nodes(XCSG.Package).nodes(XCSG.Language.Jimple).eval().nodes().one();
+		this.packageNode = Common.toQ(classNode).parent().nodes(XCSG.Package).eval().nodes().one();
 		if(packageNode == null){
 			throw new IllegalArgumentException("Class node [" + classNode.address().toAddressString() + "] is not contained in an XCSG.Pacakge node.");
 		}
