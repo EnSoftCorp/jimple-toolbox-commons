@@ -16,6 +16,7 @@ import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.utilities.NodeSourceCorrespondenceSorter;
 import com.ensoftcorp.open.java.commons.analysis.CommonQueries;
+import com.ensoftcorp.open.java.commons.wishful.JavaStopGap;
 import com.ensoftcorp.open.jimple.commons.log.Log;
 
 import soot.Body;
@@ -45,11 +46,18 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 	protected ArrayList<Node> cfgNodeSourceOrdering;
 	protected AtlasSet<Node> restrictedRegion;
 	
+	private static int id = 0;
+	
 	public MethodCFGTransform(String phaseName, Node method) {
 		if(phaseName == null){
 			throw new IllegalArgumentException("Phase name cannot be null");
 		}
-		this.phaseName = phaseName + "-" + CommonQueries.getQualifiedMethodName(method);
+		
+		// TODO: this is a nicer name scheme, but its not very reliable
+//		String qualifiedMethodName = CommonQueries.getQualifiedMethodName(method);
+//		this.phaseName = phaseName + "-" + qualifiedMethodName.substring(qualifiedMethodName.lastIndexOf(".")) + method.getAttr(JavaStopGap.SIGNATURE);
+		
+		this.phaseName = phaseName + ": " + (id++);
 		
 		if(!method.taggedWith(XCSG.Language.Jimple)){
 			throw new IllegalArgumentException("The method parameter must be an XCSG.Language.Jimple node.");
@@ -68,9 +76,9 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 		}
 		
 		// grab the container package node
-		this.packageNode = Common.toQ(classNode).parent().nodes(XCSG.Package).eval().nodes().one();
+		this.packageNode = Common.toQ(classNode).containers().nodes(XCSG.Package).eval().nodes().one();
 		if(packageNode == null){
-			throw new IllegalArgumentException("Class node [" + classNode.address().toAddressString() + "] is not contained in an XCSG.Pacakge node.");
+			throw new IllegalArgumentException("Class node [" + classNode.address().toAddressString() + "] is not contained in an XCSG.Package node.");
 		}
 		this.cfgNodes = CommonQueries.cfg(method).nodes(XCSG.Language.Jimple).eval().nodes();
 		
@@ -96,6 +104,31 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 		this.cfgNodeSourceOrdering = sortedCFGNodes;
 	}
 	
+	private boolean classNamesMatch(String sootClassName, Node classNode){
+		if(sootClassName.equals(classNode.getAttr(XCSG.name).toString())){
+			// simple match
+			return true;
+		}
+		
+		// check inner class names
+		if(sootClassName.contains("$")){
+			String[] sootClassNames = sootClassName.split("\\$");
+			for(int i=sootClassNames.length-1; i>=0; i--){
+				if(classNode.taggedWith(XCSG.Package)){
+					return false;
+				} else {
+					if(!sootClassNames[i].equals(classNode.getAttr(XCSG.name).toString())){
+						return false;
+					} else {
+						classNode = Common.toQ(classNode).parent().eval().nodes().one();
+					}
+				}
+			}
+		}
+		
+		return true;
+	}
+	
 	@Override
 	protected void internalTransform(Body methodBody, String phaseName, @SuppressWarnings("rawtypes") Map options) {
 		SootMethod sootMethod = methodBody.getMethod();
@@ -106,14 +139,7 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 		if(sootPackageName.equals(atlasPackageName)){
 			
 			String sootClassName = sootClass.getShortName();
-			String atlasClassName = classNode.getAttr(XCSG.name).toString();
-			if(sootClassName.equals(atlasClassName)){
-				
-				// TODO: would be nice to figure out how we could just match by signature instead
-//				// using signatures would be nice if they were formatted the same, but they arn't...
-//				String sootMethodSignature = sootMethod.getSignature();
-//				String atlasMethodSignature = methodNode.getAttr("##signature").toString();
-				
+			if(classNamesMatch(sootClassName, classNode)){
 				String sootMethodName = sootMethod.getName();
 				String atlasMethodName = methodNode.getAttr(XCSG.name).toString();
 				if(sootMethodName.equals(atlasMethodName)){
