@@ -16,7 +16,6 @@ import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.utilities.NodeSourceCorrespondenceSorter;
 import com.ensoftcorp.open.java.commons.analysis.CommonQueries;
-import com.ensoftcorp.open.java.commons.wishful.JavaStopGap;
 import com.ensoftcorp.open.jimple.commons.log.Log;
 
 import soot.Body;

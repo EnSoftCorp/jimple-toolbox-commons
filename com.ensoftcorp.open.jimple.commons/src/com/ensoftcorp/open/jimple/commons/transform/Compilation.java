@@ -173,8 +173,8 @@ public class Compilation {
 			if(!outputBytecode){
 				message = "An error occurred while transforming Jimple files.";
 			}
-			RuntimeException trace = new RuntimeException(t);
-			Log.error("An error occurred processing Jimple.\n\nSoot Arguments: " + Arrays.toString(sootArgs), trace);
+			RuntimeException trace = new RuntimeException(message, t);
+			Log.error(message + "\n\nSoot Arguments: " + Arrays.toString(sootArgs), trace);
 			throw trace;
 		} finally {
 			// restore the saved config (even if there was an error)
