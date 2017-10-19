@@ -204,55 +204,64 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 			Type sootMethodParameterType = sootParameterTypes.get(i);
 			Node atlasMethodParameter = atlasSortedMethodParameters.get(i);
 			
-			Q typeOfEdges = Common.universe().edges(XCSG.TypeOf);
-			Node atlasMethodParameterType = typeOfEdges.successors(Common.toQ(atlasMethodParameter)).eval().nodes().one();
-			if(atlasMethodParameterType == null){
-				Log.warning("Method parameter " + atlasMethodParameter.address().toAddressString() + " has no type.");
+			if(!checkTypeEquality(sootMethodParameterType, atlasMethodParameter)){
 				return false;
-			} else {
-				String qualifiedSootParameterType = sootMethodParameterType.toString();
-				String qualifiedAtlasParameterType = atlasMethodParameterType.getAttr(XCSG.name).toString();
-				
-				// primitives are unqualified
-				if(qualifiedSootParameterType.equals(qualifiedAtlasParameterType)){
-					return true;
-				}
-				
-				// check if Atlas node is an array type
-				if(atlasMethodParameterType.taggedWith(XCSG.ArrayType)){
-					Q arrayElementTypeEdges = Common.universe().edges(XCSG.ArrayElementType);
-					Node arrayType = atlasMethodParameterType;
-					atlasMethodParameterType = arrayElementTypeEdges.successors(Common.toQ(arrayType)).eval().nodes().one();
-					if(atlasMethodParameterType == null){
-						Log.warning("Array type " + arrayType.address().toAddressString() + " has no array element type.");
-					}
-				}
-				
-				if(!atlasMethodParameterType.taggedWith(XCSG.Primitive)){
-					// add the Atlas type package qualification
-					Node atlasParameterTypePackage = Common.toQ(atlasMethodParameterType).containers().nodes(XCSG.Package).eval().nodes().one();
-					if(atlasParameterTypePackage == null){
-						Log.warning("Method parameter type " + atlasMethodParameterType.address().toAddressString() + " has no package.");
-						return false;
-					} else {
-						qualifiedAtlasParameterType = atlasParameterTypePackage.getAttr(XCSG.name) + "." + qualifiedAtlasParameterType;
-					}
-					if(!qualifiedSootParameterType.equals(qualifiedAtlasParameterType)){
-						return false;
-					}
-				}
 			}
 		}
 		
 		return true;
 	}
 
+	protected boolean checkTypeEquality(Type sootType, Node atlasDataFlowNode){
+		Q typeOfEdges = Common.universe().edges(XCSG.TypeOf);
+		Node atlasType = typeOfEdges.successors(Common.toQ(atlasDataFlowNode)).eval().nodes().one();
+		if(atlasType == null){
+			Log.warning("Data Flow Node " + atlasDataFlowNode.address().toAddressString() + " has no type.");
+			return false;
+		} else {
+			String qualifiedSootType = sootType.toString();
+			String qualifiedAtlasType = atlasType.getAttr(XCSG.name).toString();
+			
+			// primitives are unqualified
+			if(qualifiedSootType.equals(qualifiedAtlasType)){
+				return true;
+			}
+			
+			// check if Atlas node is an array type
+			if(atlasType.taggedWith(XCSG.ArrayType)){
+				Q arrayElementTypeEdges = Common.universe().edges(XCSG.ArrayElementType);
+				Node arrayType = atlasType;
+				atlasType = arrayElementTypeEdges.successors(Common.toQ(arrayType)).eval().nodes().one();
+				if(atlasType == null){
+					Log.warning("Array type " + arrayType.address().toAddressString() + " has no array element type.");
+					return false;
+				}
+			}
+			
+			if(!atlasType.taggedWith(XCSG.Primitive)){
+				// add the Atlas type package qualification
+				Node atlasTypePackage = Common.toQ(atlasType).containers().nodes(XCSG.Package).eval().nodes().one();
+				if(atlasTypePackage == null){
+					Log.warning("Data Flow Node " + atlasType.address().toAddressString() + " has no package.");
+					return false;
+				} else {
+					qualifiedAtlasType = atlasTypePackage.getAttr(XCSG.name) + "." + qualifiedAtlasType;
+				}
+				if(!qualifiedSootType.equals(qualifiedAtlasType)){
+					return false;
+				}
+			}
+		}
+		
+		return true;
+	}
+	
 	/**
 	 * The method body transformation logic
 	 * @param methodBody
 	 * @param atlasCorrespondence
 	 */
-	protected abstract void transform(Body methodBody, Map<Unit,Node> atlasCorrespondence);
+	protected abstract void transform(Body methodBody, Map<Unit,Node> atlasControlFlowNodeCorrespondence);
 	
 	/**
 	 * Returns the corresponding Atlas node for the given Soot unit body index
