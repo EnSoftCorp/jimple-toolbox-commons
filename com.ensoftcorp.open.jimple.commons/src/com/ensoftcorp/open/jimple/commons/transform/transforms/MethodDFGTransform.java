@@ -9,6 +9,7 @@ import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.java.commons.analysis.CommonQueries;
 
 import soot.Body;
 import soot.Type;
@@ -29,8 +30,11 @@ import soot.util.Chain;
  */
 public abstract class MethodDFGTransform extends MethodCFGTransform {
 
+	protected AtlasSet<Node> dfgNodes;
+	
 	public MethodDFGTransform(String phaseName, Node method) {
 		super(phaseName, method);
+		this.dfgNodes = CommonQueries.dfg(method).nodes(XCSG.Language.Jimple).eval().nodes();
 	}
 	
 	@Override
