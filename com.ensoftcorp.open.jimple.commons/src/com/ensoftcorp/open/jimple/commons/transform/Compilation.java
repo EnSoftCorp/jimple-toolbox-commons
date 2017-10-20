@@ -139,6 +139,11 @@ public class Compilation {
 		// try to preserve as much of the original implementation as possible
 		argList.add("--p");argList.add("jb");argList.add("use-original-names:true");
         argList.add("--p");argList.add("jb");argList.add("stabilize-local-names:true");
+        
+        // this may be used to forcible generate potentially invalid bytecode
+//      argList.add("--p");argList.add("jb.tr");argList.add("ignore-wrong-staticness:true");
+        // or use PhaseOptions.v().setPhaseOption("jb.tr", "ignore-wrong-staticness:true");
+        
         argList.add("-keep-bytecode-offset");
         argList.add("-keep-line-number");
 		

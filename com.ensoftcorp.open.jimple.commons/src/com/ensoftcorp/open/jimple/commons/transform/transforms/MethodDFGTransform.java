@@ -47,7 +47,8 @@ public abstract class MethodDFGTransform extends MethodCFGTransform {
 			Unit statement = methodBodyUnitsIterator.next();
 			Node atlasControlFlowNode = atlasControlFlowNodeCorrespondence.get(statement);
 			if(atlasControlFlowNode != null && !restrictedRegion.contains(atlasControlFlowNode)){
-				atlasDataFlowNodeCorrespondence.putAll(getDataFlowNodeCorrespondence(statement, atlasControlFlowNode));
+				Map<ValueBox, Node> correspondences = getDataFlowNodeCorrespondence(statement, atlasControlFlowNode);
+				atlasDataFlowNodeCorrespondence.putAll(correspondences);
 			}
 		}
 		
