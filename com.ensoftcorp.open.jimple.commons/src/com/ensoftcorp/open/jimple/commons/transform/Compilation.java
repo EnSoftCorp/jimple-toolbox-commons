@@ -275,7 +275,7 @@ public class Compilation {
 	}
 	
 	// helper method for recursively finding jar files in a given directory
-	private static LinkedList<File> findJimple(File directory){
+	public static LinkedList<File> findJimple(File directory){
 		LinkedList<File> jimple = new LinkedList<File>();
 		if(directory.exists()){
 			if (directory.isDirectory()) {
