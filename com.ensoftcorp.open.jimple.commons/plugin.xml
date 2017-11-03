@@ -2,6 +2,11 @@
 <?eclipse version="3.4"?>
 <plugin>
 
+   <!-- startup to register the XCSG tag hierarchy extensions -->
+   <extension point="org.eclipse.ui.startup">
+     <startup class="com.ensoftcorp.open.jimple.commons.startup.RegisterHierarchyStartup"/>
+   </extension>
+
    <!-- create an initializer extension to initialize preferences -->
    <extension
       point="org.eclipse.equinox.preferences.preferences">

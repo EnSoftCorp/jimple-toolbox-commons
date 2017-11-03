@@ -43,15 +43,29 @@ import com.ensoftcorp.open.jimple.commons.log.Log;
  * @author Tom Deering - initial implementation
  * @author Jon Mathews - replaced recursive logic iterative implementation
  * @author Nikhil Ranade - added loop child edges to match Atlas for Java graph schema
- * @author Ben Holland - minor refactoring, integration utils, Atlas3 migrations
+ * @author Ben Holland - minor refactoring, integration utils, Atlas3 migrations, XCSG schema translations
  */
 public class DecompiledLoopIdentification implements Runnable {
 	
+	public static void registerHierarchy(){
+		try {
+			XCSG.HIERARCHY.registerTag(CFGNode.IRREDUCIBLE_LOOP, XCSG.Loop);
+			XCSG.HIERARCHY.registerTag(CFGNode.NATURAL_LOOP, XCSG.Loop);
+			XCSG.HIERARCHY.registerTag(CFGEdge.LOOP_REENTRY_EDGE, XCSG.ControlFlowBackEdge);
+		} catch (Exception e){
+			Log.error("Unable to register decompiled loop identification tag hierarchy.", e);
+		}
+	}
+	
 	public static interface CFGNode {
+		
 		/**
 		 * Tag applied to loop header CFG node
+		 * 
+		 * Note: This is a now legacy alias to XCSG.Loop
 		 */
-		public static final String LOOP_HEADER = "LOOP_HEADER";
+		@Deprecated
+		public static final String LOOP_HEADER = XCSG.Loop;
 
 		/**
 		 * Tag applied to loop reentry CFG node
@@ -90,8 +104,11 @@ public class DecompiledLoopIdentification implements Runnable {
 
 		/**
 		 * Tag for loop back edges
+		 * 
+		 * Note: This is a now legacy alias to XCSG.ControlFlowBackEdge
 		 */
-		public static final String LOOP_BACK_EDGE = "LOOP_BACK_EDGE";
+		@Deprecated
+		public static final String LOOP_BACK_EDGE = XCSG.ControlFlowBackEdge;
 	}
 
 	public static void recoverLoops() {
