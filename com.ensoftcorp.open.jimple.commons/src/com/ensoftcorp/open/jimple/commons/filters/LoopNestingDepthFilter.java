@@ -10,7 +10,6 @@ import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.filters.InvalidFilterParameterException;
 import com.ensoftcorp.open.commons.filters.NodeFilter;
-import com.ensoftcorp.open.jimple.commons.loops.DecompiledLoopIdentification.CFGNode;
 
 /**
  * Filters loop based on how deeply they are locally nested
@@ -52,7 +51,7 @@ public class LoopNestingDepthFilter extends NodeFilter {
 		AtlasSet<Node> result = new AtlasHashSet<Node>();
 		Q loopChildEdges = Common.universe().edgesTaggedWithAny(XCSG.LoopChild).retainEdges();
 		Q loopRoots = loopChildEdges.roots();
-		Q loopHeaders = loopChildEdges.nodesTaggedWithAny(CFGNode.LOOP_HEADER);
+		Q loopHeaders = loopChildEdges.nodesTaggedWithAny(XCSG.Loop);
 
 		for (Node header : loopHeaders.eval().nodes()) {
 			Q path = loopChildEdges.between(loopRoots, Common.toQ(header));
@@ -98,7 +97,7 @@ public class LoopNestingDepthFilter extends NodeFilter {
 
 	@Override
 	protected String[] getSupportedNodeTags() {
-		return new String[]{ XCSG.Loop, CFGNode.LOOP_HEADER };
+		return new String[]{ XCSG.Loop };
 	}
 
 }

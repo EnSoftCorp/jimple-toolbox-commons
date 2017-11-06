@@ -12,6 +12,7 @@ import com.ensoftcorp.atlas.core.markup.Markup;
 import com.ensoftcorp.atlas.core.markup.MarkupProperty;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.query.Query;
+import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.atlas.java.core.script.Common;
 import com.ensoftcorp.open.jimple.commons.loops.DecompiledLoopIdentification.CFGNode;
 
@@ -31,7 +32,7 @@ public class LoopHighlighter {
 	 * @return
 	 */
 	public static Markup applyHighlightsForLoopDepth(Markup m) {
-		Q loopHeadersQ = Common.universe().nodesTaggedWithAll(CFGNode.LOOP_HEADER);
+		Q loopHeadersQ = Common.universe().nodesTaggedWithAll(XCSG.Loop);
 		AtlasSet<Node> loopHeaders = loopHeadersQ.eval().nodes();
 		
 		Map<Node, Color> colorMap = new HashMap<Node, Color>();

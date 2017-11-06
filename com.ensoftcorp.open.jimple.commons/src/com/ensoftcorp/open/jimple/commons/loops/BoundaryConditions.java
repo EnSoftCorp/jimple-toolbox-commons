@@ -62,7 +62,7 @@ public class BoundaryConditions {
 				Object loopIdPred = null;
 				Object loopIdSucc = null;
 				
-				if (outEdge.taggedWith(DecompiledLoopIdentification.CFGEdge.LOOP_BACK_EDGE)) {
+				if (outEdge.taggedWith(XCSG.ControlFlowBackEdge)) {
 					// assert: successor is a loop header
 					loopIdPred = getMemberId(pred);
 					loopIdSucc = getHeaderId(successor);
@@ -134,7 +134,7 @@ public class BoundaryConditions {
 	}
 
 	private static boolean isLoopHeader(GraphElement cfNode) {
-		return cfNode.taggedWith(CFGNode.LOOP_HEADER);
+		return cfNode.taggedWith(XCSG.Loop);
 	}
 
 	private static Object getMemberId(GraphElement cfNode) {
