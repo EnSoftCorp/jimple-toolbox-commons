@@ -248,15 +248,15 @@ public class DecompiledLoopIdentification implements Runnable {
 					}
 				});
 
-				Map<Node, Integer> loopHeaderToID = new HashMap<Node, Integer>((int) loopHeadersSet.size());
+				Map<Node, String> loopHeaderToID = new HashMap<Node, String>((int) loopHeadersSet.size());
 
 				synchronized (idGeneratorLock) {
 					for (Node header : sortedLoopHeaders) {
 						int id = idGenerator++;
-						loopHeaderToID.put(header, id);
+						loopHeaderToID.put(header, Integer.toString(id));
 						header.tag(CFGNode.LOOP_HEADER);
 
-						header.putAttr(CFGNode.LOOP_HEADER_ID, id);
+						header.putAttr(CFGNode.LOOP_HEADER_ID, Integer.toString(id));
 						if (irreducible.contains(header)) {
 							header.tag(CFGNode.IRREDUCIBLE_LOOP);
 						} else {
