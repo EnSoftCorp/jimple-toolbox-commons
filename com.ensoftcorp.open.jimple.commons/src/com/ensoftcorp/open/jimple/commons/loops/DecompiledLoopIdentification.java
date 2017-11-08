@@ -109,6 +109,14 @@ public class DecompiledLoopIdentification implements Runnable {
 		 */
 		@Deprecated
 		public static final String LOOP_BACK_EDGE = XCSG.ControlFlowBackEdge;
+		
+		/**
+		 * Tag for interprocedural loop child edges
+		 * 
+		 * Note: This may move to XCSG later.
+		 */
+		public static final String INTERPROCEDURAL_LOOP_CHILD = "INTERPROCEDURAL_LOOP_CHILD";
+
 	}
 
 	public static void recoverLoops() {
