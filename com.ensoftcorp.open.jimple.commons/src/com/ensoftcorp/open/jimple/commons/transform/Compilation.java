@@ -107,11 +107,11 @@ public class Compilation {
 		
 		// locate classpath jars
 		StringBuilder classpath = new StringBuilder();
-		addJarsToClasspath(JavaCore.create(project), classpath);
+		addJarsToClasspath(JavaCore.create(project), classpath, true);
 		
 		// locate classpath jars for project dependencies
 		for(IProject dependency : project.getReferencedProjects()){
-			addJarsToClasspath(JavaCore.create(dependency), classpath);
+			addJarsToClasspath(JavaCore.create(dependency), classpath, true);
 		}
 		
 		// configure soot arguments
@@ -205,7 +205,7 @@ public class Compilation {
 
 	// helper method for locating and adding the jar locations to the classpath
 	// should handle library paths and absolute jar locations
-	private static void addJarsToClasspath(IJavaProject jProject, StringBuilder classpath) throws JavaModelException {
+	private static void addJarsToClasspath(IJavaProject jProject, StringBuilder classpath, boolean includeUnlinkedLibraries) throws JavaModelException {
 		IPackageFragmentRoot[] fragments = jProject.getAllPackageFragmentRoots();
 		for(IPackageFragmentRoot fragment : fragments){
 			if(fragment.getKind() == IPackageFragmentRoot.K_BINARY){				
@@ -223,6 +223,13 @@ public class Compilation {
 					}
 				}
 				classpath.append(jarLocation);
+				classpath.append(File.pathSeparator);
+			}
+		}
+		
+		if(includeUnlinkedLibraries){
+			for(File jar : findJars(jProject.getProject().getLocation().toFile())){
+				classpath.append(jar.getAbsolutePath());
 				classpath.append(File.pathSeparator);
 			}
 		}
@@ -272,6 +279,23 @@ public class Compilation {
 			}
 		}
 		return new File(commonPath);
+	}
+	
+	// helper method for recursively finding jar files in a given directory
+	public static LinkedList<File> findJars(File directory){
+		LinkedList<File> jars = new LinkedList<File>();
+		if(directory.exists()){
+			if (directory.isDirectory()) {
+				for (File f : directory.listFiles()) {
+					jars.addAll(findJars(f));
+				}
+			}
+			File file = directory;
+			if(file.getName().endsWith(".jar")){
+				jars.add(file);
+			}
+		}
+		return jars;
 	}
 	
 	// helper method for recursively finding jar files in a given directory
