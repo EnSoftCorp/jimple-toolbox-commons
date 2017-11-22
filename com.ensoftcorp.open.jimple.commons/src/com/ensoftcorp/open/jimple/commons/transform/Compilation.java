@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.TreeSet;
 
 import org.eclipse.core.resources.IProject;
@@ -29,12 +30,13 @@ public class Compilation {
 	/**
 	 * Compiles a Jimple in a project to an output JAR file
 	 * @param projectName The name of the project in the workspace to compile
+	 * @param libraries - a list of library or library directory file paths
 	 * @param outputJar The location to output the resulting jar
 	 * @throws IOException
 	 * @throws CoreException 
 	 */
-	public static void compile(String projectName, File outputJar) throws IOException, CoreException {
-		compile(WorkspaceUtils.getProject(projectName), null, outputJar);
+	public static void compile(String projectName, List<File> libraries, File outputJar) throws IOException, CoreException {
+		compile(WorkspaceUtils.getProject(projectName), libraries, outputJar);
 	}
 	
 	/**
@@ -44,53 +46,27 @@ public class Compilation {
 	 * @throws IOException
 	 * @throws CoreException 
 	 */
-	public static void compile(IProject project, File outputJar) throws IOException, CoreException {
-		compile(project, null, outputJar);
+	public static void compile(IProject project, List<File> libraries, File outputJar) throws IOException, CoreException {
+		File jimpleDirectory = null; // assume jimple is at the project root
+		boolean allowPhantomReferences = false; // compile in strict mode
+		boolean outputBytecode = true; // compile Jimple to class files
+		Transform[] transforms = new Transform[]{}; // do not perform any program transformations
+		Compilation.compile(project, jimpleDirectory, outputJar, allowPhantomReferences, libraries, outputBytecode, transforms);
 	}
 	
 	/**
-	 * Compiles a Jimple in a project to an output JAR file
-	 * @param project The project to compile
-	 * @param jimpleDirectory The directory path containing the jimple source (example: "sootOutput" or "WEB-INF/jimple"), otherwise null
-	 * @param outputJar The location to output the resulting jar
+	 * Compiles the Jimple in the given project to a jar
+	 * @param project The primary project to compile (referenced projects will be considered automatically)
+	 * @param jimpleDirectory The project's root Jimple directory
+	 * @param outputJar The output file location to write the resulting jar file
+	 * @param allowPhantomReferences Allows phantom references to exist
+	 * @param libraries A list of file paths to library dependencies or directories containing multiple library dependencies
+	 * @param outputBytecode If true the jar consists of class files else the jar consists of jimple files
+	 * @param transforms An optional array of program transformations to apply before compilation 
 	 * @throws IOException
-	 * @throws CoreException 
+	 * @throws CoreException
 	 */
-	public static void compile(IProject project, File jimpleDirectory, File outputJar) throws IOException, CoreException {
-		compile(project, jimpleDirectory, outputJar, new Transform[]{});
-	}
-	
-	/**
-	 * Compiles a Jimple in a project to an output JAR file
-	 * @param project The project to compile
-	 * @param jimpleDirectory The directory path containing the jimple source (example: "sootOutput" or "WEB-INF/jimple"), otherwise null
-	 * @param outputJar The location to output the resulting jar
-	 * @param transforms An array of transformations to apply during compilation, if non pass empty array or null
-	 * @throws IOException
-	 * @throws CoreException 
-	 */
-	public static void compile(IProject project, File jimpleDirectory, File outputJar, Transform... transforms) throws IOException, CoreException {
-		compile(project, jimpleDirectory, outputJar, false, transforms);
-	}
-	
-	
-	
-	/**
-	 * Compiles a Jimple in a project to an output JAR file
-	 * @param project The project to compile
-	 * @param jimpleDirectory The directory path containing the jimple source (example: "sootOutput" or "WEB-INF/jimple"), otherwise null
-	 * @param outputJar The location to output the resulting jar
-	 * @param allowPhantomReferences allows phantom references to exist
-	 * @param transforms An array of transformations to apply during compilation, if non pass empty array or null
-	 * @throws IOException
-	 * @throws CoreException 
-	 */
-	
-	public static void compile(IProject project, File jimpleDirectory, File outputJar, boolean allowPhantomReferences, Transform... transforms) throws IOException, CoreException {
-		compile(project, jimpleDirectory, outputJar, false, true, transforms);
-	}
-	
-	public static void compile(IProject project, File jimpleDirectory, File outputJar, boolean allowPhantomReferences, boolean outputBytecode, Transform... transforms) throws IOException, CoreException {
+	public static void compile(IProject project, File jimpleDirectory, File outputJar, boolean allowPhantomReferences, List<File> libraries, boolean outputBytecode, Transform... transforms) throws IOException, CoreException {
 		// make sure there is a directory to write the output to
 		File outputDirectory = outputJar.getParentFile();
 		if(!outputDirectory.exists()){
@@ -107,11 +83,26 @@ public class Compilation {
 		
 		// locate classpath jars
 		StringBuilder classpath = new StringBuilder();
-		addJarsToClasspath(JavaCore.create(project), classpath, true);
+		addJarsToClasspath(JavaCore.create(project), classpath);
 		
 		// locate classpath jars for project dependencies
 		for(IProject dependency : project.getReferencedProjects()){
-			addJarsToClasspath(JavaCore.create(dependency), classpath, true);
+			addJarsToClasspath(JavaCore.create(dependency), classpath);
+		}
+		
+		// add any library dependencies to the class path
+		for(File file : libraries){
+			if(file.isDirectory()){
+				File libraryDirectory = file;
+				for(File jar : findJars(libraryDirectory)){
+					classpath.append(jar.getAbsolutePath());
+					classpath.append(File.pathSeparator);
+				}
+			} else {
+				File library = file;
+				classpath.append(library.getAbsolutePath());
+				classpath.append(File.pathSeparator);
+			}
 		}
 		
 		// configure soot arguments
@@ -205,7 +196,7 @@ public class Compilation {
 
 	// helper method for locating and adding the jar locations to the classpath
 	// should handle library paths and absolute jar locations
-	private static void addJarsToClasspath(IJavaProject jProject, StringBuilder classpath, boolean includeUnlinkedLibraries) throws JavaModelException {
+	private static void addJarsToClasspath(IJavaProject jProject, StringBuilder classpath) throws JavaModelException {
 		IPackageFragmentRoot[] fragments = jProject.getAllPackageFragmentRoots();
 		for(IPackageFragmentRoot fragment : fragments){
 			if(fragment.getKind() == IPackageFragmentRoot.K_BINARY){				
@@ -223,13 +214,6 @@ public class Compilation {
 					}
 				}
 				classpath.append(jarLocation);
-				classpath.append(File.pathSeparator);
-			}
-		}
-		
-		if(includeUnlinkedLibraries){
-			for(File jar : findJars(jProject.getProject().getLocation().toFile())){
-				classpath.append(jar.getAbsolutePath());
 				classpath.append(File.pathSeparator);
 			}
 		}
