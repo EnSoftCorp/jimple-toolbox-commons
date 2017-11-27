@@ -29,8 +29,11 @@ import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.db.set.SingletonAtlasSet;
 import com.ensoftcorp.atlas.core.index.common.SourceCorrespondence;
 import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.commons.utilities.NodeSourceCorrespondenceSorter;
 import com.ensoftcorp.open.jimple.commons.log.Log;
+import com.ensoftcorp.open.jimple.commons.loops.DecompiledLoopIdentification.CFGNode;
 
 /**
  * Uses algorithm from Wei et al. to identify loops, even irreducible ones.
@@ -232,47 +235,30 @@ public class DecompiledLoopIdentification implements Runnable {
 
 				// modify universe graph
 				Collection<Node> loopHeaders = innermostLoopHeaders.values();
-				AtlasSet<Node> loopHeadersSet = new AtlasHashSet<Node>();
-				loopHeadersSet.addAll(loopHeaders);
 				
-				ArrayList<Node> sortedLoopHeaders = new ArrayList<Node>((int) loopHeadersSet.size());
-				for(Node loopHeader : loopHeadersSet){
+				ArrayList<Node> sortedLoopHeaders = new ArrayList<Node>(loopHeaders.size());
+				for(Node loopHeader : loopHeaders){
 					sortedLoopHeaders.add(loopHeader);
 				}
-				Collections.sort(sortedLoopHeaders, new Comparator<Node>(){
-					@Override
-					public int compare(Node n1, Node n2) {
-						SourceCorrespondence n1SC = (SourceCorrespondence) n1.getAttr(XCSG.sourceCorrespondence);
-						SourceCorrespondence n2SC = (SourceCorrespondence) n2.getAttr(XCSG.sourceCorrespondence);
-						if(n1SC.sourceFile.equals(n2SC.sourceFile)){
-							// same file, sort by source offset
-							return Integer.compare(n1SC.offset, n2SC.offset);
-						} else {
-							// files are not the same sort broadly by file name
-							String path1 = n1SC.sourceFile.getLocation().toOSString();
-							String path2 = n2SC.sourceFile.getLocation().toOSString();
-							return path1.compareTo(path2);
-						}
-					}
-				});
+				Collections.sort(sortedLoopHeaders, new NodeSourceCorrespondenceSorter());
 
-				Map<Node, String> loopHeaderToID = new HashMap<Node, String>((int) loopHeadersSet.size());
+				Map<Node, String> loopHeaderToID = new HashMap<Node, String>(loopHeaders.size());
 
 				synchronized (idGeneratorLock) {
-					for (Node header : sortedLoopHeaders) {
+					for (Node loopHeader : sortedLoopHeaders) {
 						int id = idGenerator++;
-						loopHeaderToID.put(header, Integer.toString(id));
-						header.tag(CFGNode.LOOP_HEADER);
+						loopHeaderToID.put(loopHeader, Integer.toString(id));
+						loopHeader.tag(XCSG.Loop);
 
-						header.putAttr(CFGNode.LOOP_HEADER_ID, Integer.toString(id));
-						if (irreducible.contains(header)) {
-							header.tag(CFGNode.IRREDUCIBLE_LOOP);
+						loopHeader.putAttr(CFGNode.LOOP_HEADER_ID, Integer.toString(id));
+						if (irreducible.contains(loopHeader)) {
+							loopHeader.tag(CFGNode.IRREDUCIBLE_LOOP);
 						} else {
-							header.tag(CFGNode.NATURAL_LOOP);
+							loopHeader.tag(CFGNode.NATURAL_LOOP);
 						}
 					}
 				}
-
+				
 				for (Node cfgNode : innermostLoopHeaders.keySet()) {
 					Node loopHeader = innermostLoopHeaders.get(cfgNode);
 					cfgNode.putAttr(CFGNode.LOOP_MEMBER_ID, loopHeaderToID.get(loopHeader));
@@ -289,7 +275,7 @@ public class DecompiledLoopIdentification implements Runnable {
 				}
 
 				for (Edge loopbackEdge : loopbacks) {
-					loopbackEdge.tag(CFGEdge.LOOP_BACK_EDGE);
+					loopbackEdge.tag(XCSG.ControlFlowBackEdge);
 				}
 			} catch (Throwable t) {
 				Log.error("Problem in loop analyzer thread for CFG root:\n" + root, t);
