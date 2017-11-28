@@ -21,6 +21,10 @@ If you want to install from source for bleeding edge changes, first grab a copy 
 ## Changelog
 Note that version numbers are based off [Atlas](http://www.ensoftcorp.com/atlas/download/) version numbers.
 
+### 3.3.0
+- Added Jimple compilation / transformation APIs
+- Code improvements to DLI loop header ID assignment
+
 ### 3.1.7
 - Updates to depedencies
 - Embedded javadoc with plugin

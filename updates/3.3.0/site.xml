@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/com.ensoftcorp.open.jimple.commons.feature_3.3.0.201711281310.jar" id="com.ensoftcorp.open.jimple.commons.feature" version="3.3.0.201711281310">
+      <category name="com.ensoftcorp.open.commons.category"/>
+   </feature>
+   <category-def name="com.ensoftcorp.open.commons.category" label="Toolbox Commons">
+      <description>
+         A set of common utilities for program analysis using Atlas.
+      </description>
+   </category-def>
+</site>
