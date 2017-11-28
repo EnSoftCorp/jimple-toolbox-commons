@@ -5,5 +5,8 @@ com.ensoftcorp.open.jimple.commons.filters.rootset
 com.ensoftcorp.open.jimple.commons.log
 com.ensoftcorp.open.jimple.commons.loops
 com.ensoftcorp.open.jimple.commons.preferences
+com.ensoftcorp.open.jimple.commons.startup
+com.ensoftcorp.open.jimple.commons.transform
+com.ensoftcorp.open.jimple.commons.transform.transforms
 com.ensoftcorp.open.jimple.commons.ui
 com.ensoftcorp.open.jimple.commons.wishful
