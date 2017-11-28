@@ -8,7 +8,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -27,13 +26,10 @@ import com.ensoftcorp.atlas.core.db.graph.operation.ForwardGraph;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.db.set.SingletonAtlasSet;
-import com.ensoftcorp.atlas.core.index.common.SourceCorrespondence;
 import com.ensoftcorp.atlas.core.query.Q;
-import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.utilities.NodeSourceCorrespondenceSorter;
 import com.ensoftcorp.open.jimple.commons.log.Log;
-import com.ensoftcorp.open.jimple.commons.loops.DecompiledLoopIdentification.CFGNode;
 
 /**
  * Uses algorithm from Wei et al. to identify loops, even irreducible ones.
