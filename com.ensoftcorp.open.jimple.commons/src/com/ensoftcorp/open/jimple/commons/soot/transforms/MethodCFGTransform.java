@@ -148,9 +148,9 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 						HashMap<Unit,Node> atlasCorrespondence = new HashMap<Unit,Node>();
 						
 						if(methodBodyUnits.size() != cfgNodeSourceOrdering.size()){
-							Log.warning("Unequal number of statements!"
+							Log.error("Unequal number of statements! All statements in " + CommonQueries.getQualifiedMethodName(methodNode) + " will be ignored."
 									+ "\nSoot Statements: " + methodBodyUnits.size()
-									+ "\nAtlas Statements: " + cfgNodeSourceOrdering.size());
+									+ "\nAtlas Statements: " + cfgNodeSourceOrdering.size(), new RuntimeException("Unequal number of statements!"));
 						} else {
 							// Using snapshopIterator avoids ConcurrentModificationException
 							// form being thrown.
