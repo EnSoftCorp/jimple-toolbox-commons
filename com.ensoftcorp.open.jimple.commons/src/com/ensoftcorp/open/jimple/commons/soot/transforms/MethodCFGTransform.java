@@ -1,4 +1,4 @@
-package com.ensoftcorp.open.jimple.commons.transform.transforms;
+package com.ensoftcorp.open.jimple.commons.soot.transforms;
 
 import java.util.ArrayList;
 import java.util.Collections;

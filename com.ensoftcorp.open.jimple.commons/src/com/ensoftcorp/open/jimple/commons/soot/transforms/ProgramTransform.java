@@ -1,4 +1,4 @@
-package com.ensoftcorp.open.jimple.commons.transform.transforms;
+package com.ensoftcorp.open.jimple.commons.soot.transforms;
 
 import soot.SceneTransformer;
 import soot.Transform;
