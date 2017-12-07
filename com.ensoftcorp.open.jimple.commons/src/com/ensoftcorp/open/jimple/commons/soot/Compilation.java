@@ -20,9 +20,7 @@ import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
 import com.ensoftcorp.open.jimple.commons.log.Log;
 
 import soot.G;
-import soot.PackManager;
 import soot.SootClass;
-import soot.Transform;
 import soot.util.Chain;
 
 public class Compilation {
@@ -30,13 +28,14 @@ public class Compilation {
 	/**
 	 * Compiles a Jimple in a project to an output JAR file
 	 * @param projectName The name of the project in the workspace to compile
-	 * @param libraries - a list of library or library directory file paths
 	 * @param outputJar The location to output the resulting jar
 	 * @throws IOException
 	 * @throws CoreException 
+	 * @throws SootConversionException 
 	 */
-	public static void compile(String projectName, List<File> libraries, File outputJar) throws IOException, CoreException {
-		compile(WorkspaceUtils.getProject(projectName), libraries, outputJar);
+	public static void compile(String projectName, File outputJar) throws IOException, CoreException, SootConversionException {
+		IProject project = WorkspaceUtils.getProject(projectName);
+		compile(project, findJars(project.getLocation().toFile()), outputJar);
 	}
 	
 	/**
@@ -45,13 +44,13 @@ public class Compilation {
 	 * @param outputJar The location to output the resulting jar
 	 * @throws IOException
 	 * @throws CoreException 
+	 * @throws SootConversionException 
 	 */
-	public static void compile(IProject project, List<File> libraries, File outputJar) throws IOException, CoreException {
+	public static void compile(IProject project, List<File> libraries, File outputJar) throws IOException, CoreException, SootConversionException {
 		File jimpleDirectory = null; // assume jimple is at the project root
 		boolean allowPhantomReferences = false; // compile in strict mode
 		boolean outputBytecode = true; // compile Jimple to class files
-		Transform[] transforms = new Transform[]{}; // do not perform any program transformations
-		Compilation.compile(project, jimpleDirectory, outputJar, allowPhantomReferences, libraries, outputBytecode, transforms);
+		Compilation.compile(project, jimpleDirectory, outputJar, allowPhantomReferences, libraries, outputBytecode);
 	}
 	
 	/**
@@ -65,8 +64,9 @@ public class Compilation {
 	 * @param transforms An optional array of program transformations to apply before compilation 
 	 * @throws IOException
 	 * @throws CoreException
+	 * @throws SootConversionException 
 	 */
-	public static void compile(IProject project, File jimpleDirectory, File outputJar, boolean allowPhantomReferences, List<File> libraries, boolean outputBytecode, Transform... transforms) throws IOException, CoreException {
+	public static void compile(IProject project, File jimpleDirectory, File outputJar, boolean allowPhantomReferences, List<File> libraries, boolean outputBytecode) throws IOException, CoreException, SootConversionException {
 		// make sure there is a directory to write the output to
 		File outputDirectory = outputJar.getParentFile();
 		if(!outputDirectory.exists()){
@@ -151,14 +151,6 @@ public class Compilation {
 			ConfigManager.getInstance().startTempConfig();
 			G.reset();
 			
-			// register all the bytecode transformations to perform
-			if(transforms != null){
-				for(Transform transform : transforms){
-					// add the transform to the jimple transformation pack
-					PackManager.v().getPack("jtp").add(transform);
-				}
-			}
-			
 			// run soot
 			soot.Main.v().run(sootArgs);
 			
@@ -169,9 +161,9 @@ public class Compilation {
 			if(!outputBytecode){
 				message = "An error occurred while transforming Jimple files.";
 			}
-			RuntimeException trace = new RuntimeException(message, t);
-			Log.error(message + "\n\nSoot Arguments: " + Arrays.toString(sootArgs), trace);
-			throw trace;
+			SootConversionException error = new SootConversionException(message, t);
+			Log.error(message + "\n\nSoot Arguments: " + Arrays.toString(sootArgs), error);
+			throw error;
 		} finally {
 			// restore the saved config (even if there was an error)
             ConfigManager.getInstance().endTempConfig();

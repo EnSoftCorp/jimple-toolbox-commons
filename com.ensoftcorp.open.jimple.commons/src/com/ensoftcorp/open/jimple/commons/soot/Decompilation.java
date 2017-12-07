@@ -44,9 +44,8 @@ public class Decompilation {
 	 * @throws SootConversionException 
 	 */
 	public static void decompile(File jar, File outputDirectory, boolean allowPhantomReferences, boolean useOriginalNames) throws SootConversionException, IOException {
-		List<IClasspathEntry> entries = new ArrayList<IClasspathEntry>();
-//		
 		// add the default JVM classpath (assuming translator uses the same jvm libraries)
+		List<IClasspathEntry> entries = new ArrayList<IClasspathEntry>();
 		IVMInstall vmInstall = JavaRuntime.getDefaultVMInstall();
 		LibraryLocation[] locations = JavaRuntime.getLibraryLocations(vmInstall);
 		for (LibraryLocation library : locations) {
@@ -82,7 +81,7 @@ public class Decompilation {
 			ArrayList<String> argList = new ArrayList<String>();
 			argList.add("-src-prec"); argList.add("class");
 			argList.add("--xml-attributes");
-			argList.add("-f"); argList.add("jimple");
+			argList.add("-output-format"); argList.add("jimple");
 			argList.add("-cp"); argList.add(classpath.toString());
 			if(allowPhantomReferences){
 				argList.add("-allow-phantom-refs");
@@ -124,14 +123,6 @@ public class Decompilation {
 		} finally {
 			// restore the saved config (even if there was an error)
             ConfigManager.getInstance().endTempConfig();
-		}
-	}
-	
-	// Throwable exception wrapper to make a runtime soot conversion exception checked
-	private static class SootConversionException extends Exception {
-		private static final long serialVersionUID = 1L;
-		public SootConversionException(Throwable t) {
-			super(t);
 		}
 	}
 	
