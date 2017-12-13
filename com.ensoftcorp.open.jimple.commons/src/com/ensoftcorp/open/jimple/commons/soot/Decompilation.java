@@ -22,7 +22,11 @@ import soot.SootClass;
 import soot.util.Chain;
 
 public class Decompilation {
-
+	
+	public static final String JIMPLE_USE_ORIGINAL_NAMES = "JimpleUseOriginalNames";
+	public static final String JIMPLE_STABALIZE_LOCAL_NAMES = "JimpleStabalizeLocalNames";
+	public static final String JIMPLE_ALLOW_PHANTOM_REFERENCES = "JimpleAllowPhantomReferences";
+	
 	/**
 	 * Converts a jar to jimple using the default classpath
 	 * @param jar
