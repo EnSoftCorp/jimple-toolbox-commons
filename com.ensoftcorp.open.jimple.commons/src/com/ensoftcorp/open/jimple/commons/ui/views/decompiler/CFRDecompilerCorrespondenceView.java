@@ -1,5 +1,6 @@
 package com.ensoftcorp.open.jimple.commons.ui.views.decompiler;
 
+import java.awt.Frame;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -14,9 +15,12 @@ import java.util.List;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.awt.SWT_AWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.wb.swt.ResourceManager;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rtextarea.RTextScrollPane;
 
 import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.Node;
@@ -75,15 +79,21 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		super.dispose();
 	}
 
-	private StyledText textArea;
+	private RSyntaxTextArea textArea;
 	
 	@Override
-	public void createPartControl(Composite arg0) {
-		textArea = new StyledText(arg0, SWT.BORDER);
-		textArea.setTopMargin(5);
-		textArea.setBottomMargin(5);
-		textArea.setLeftMargin(5);
-		textArea.setRightMargin(5);
+	public void createPartControl(Composite parent) {
+		
+		textArea = new RSyntaxTextArea(20, 60);
+		textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+		textArea.setCodeFoldingEnabled(true);
+		RTextScrollPane sp = new RTextScrollPane(textArea);
+		
+		// convert swing component to swt
+		Composite composite = new Composite(parent, SWT.EMBEDDED | SWT.NO_BACKGROUND);
+		Frame frame = SWT_AWT.new_Frame(composite);
+		frame.add(sp);
+		
 		if(indexExists()){
 			textArea.setText("Empty Selection.");
 		} else {

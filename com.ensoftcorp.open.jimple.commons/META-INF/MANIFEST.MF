@@ -16,7 +16,8 @@ Require-Bundle: org.eclipse.ui,
  com.ensoftcorp.atlas.jimple.core;bundle-version="3.3.0";visibility:=reexport,
  com.ensoftcorp.atlas.jimple.ui;bundle-version="3.3.0";visibility:=reexport,
  com.ensoftcorp.open.java.commons;bundle-version="3.3.0",
- org.benf.cfr;bundle-version="0.123.0"
+ org.benf.cfr;bundle-version="0.123.0",
+ org.fife.rsyntaxtextarea;bundle-version="2.6.1"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Export-Package: com.ensoftcorp.open.jimple.commons.analysis,
