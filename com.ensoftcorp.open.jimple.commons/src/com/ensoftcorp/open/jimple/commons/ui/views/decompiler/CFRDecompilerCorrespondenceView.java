@@ -12,18 +12,25 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.swing.ScrollPaneConstants;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.awt.SWT_AWT;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.wb.swt.ResourceManager;
+import org.fife.rsyntaxtextarea.themes.Themes;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.Node;
+import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.index.common.SourceCorrespondence;
 import com.ensoftcorp.atlas.core.log.Log;
@@ -68,38 +75,40 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			}
 		}
 	}
-	
-	@Override
-	public void dispose(){
-		try {
-			delete(tempDirectory);
-		} catch (FileNotFoundException e) {
-			// just a best effort...
-		}
-		super.dispose();
-	}
 
+	private Label statusLabel;
 	private RSyntaxTextArea textArea;
 	
 	@Override
 	public void createPartControl(Composite parent) {
+		parent.setLayout(new GridLayout(1, false));
 		
-		textArea = new RSyntaxTextArea(20, 60);
+		textArea = new RSyntaxTextArea(5, 5);
 		textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
 		textArea.setCodeFoldingEnabled(true);
-		RTextScrollPane sp = new RTextScrollPane(textArea);
+		textArea.setEditable(false);
+		if(Themes.ECLIPSE != null){
+			Themes.ECLIPSE.apply(textArea);
+		}
+		
+		// place highlighted text inside a scroll panel
+		RTextScrollPane scrollPanel = new RTextScrollPane(textArea);
+		scrollPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+		scrollPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		
 		// convert swing component to swt
 		Composite composite = new Composite(parent, SWT.EMBEDDED | SWT.NO_BACKGROUND);
+		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		Frame frame = SWT_AWT.new_Frame(composite);
-		frame.add(sp);
+		frame.add(scrollPanel);
 		
+		statusLabel = new Label(parent, SWT.NONE);
+		statusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		if(indexExists()){
-			textArea.setText("Empty Selection.");
+			statusLabel.setText("Empty Selection.");
 		} else {
-			textArea.setText("Map a Jimple project.");
+			statusLabel.setText("Map a Jimple project.");
 		}
-		textArea.setEditable(false);
 		
 		registerGraphHandlers();
 	}
@@ -107,15 +116,29 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	@Override
 	public void setFocus() {}
 
+	private AtlasSet<Node> lastSelectedMethodSet = new AtlasHashSet<Node>();
+	
 	@Override
 	public void selectionChanged(Graph selection) {
 		AtlasSet<Node> filteredSelection = filter(selection);
 		AtlasSet<Node> selectedMethods = Common.toQ(filteredSelection).nodes(XCSG.Method).eval().nodes();
 		AtlasSet<Node> containingMethods = CommonQueries.getContainingMethods(Common.toQ(filteredSelection).difference(Common.toQ(selectedMethods))).eval().nodes();
 		AtlasSet<Node> methods = Common.toQ(selectedMethods).union(Common.toQ(containingMethods)).eval().nodes();
+		
+		boolean sizesEqual = lastSelectedMethodSet.size() == methods.size();
+		boolean setContentsEqual = Common.toQ(lastSelectedMethodSet).intersection(Common.toQ(methods)).eval().nodes().size() == lastSelectedMethodSet.size();
+		if(sizesEqual && setContentsEqual){
+			// effectively the same selection...no need to recompute results
+			return;
+		} else {
+			lastSelectedMethodSet.clear();
+			lastSelectedMethodSet.addAll(methods);
+		}
+		
 		if(methods.isEmpty()){
-			textArea.setText("Empty Selection.");
+			statusLabel.setText("Empty Selection.");
 		} else if(methods.size() > 1){
+			statusLabel.setText("Selection: " + methods.size() + " methods.");
 			ArrayList<Node> sortedMethods = new ArrayList<Node>((int) methods.size());
 			for(Node method : methods){
 				sortedMethods.add(method);
@@ -136,14 +159,13 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			text.append("\n...");
 			textArea.setText(text.toString().trim());
 		} else {
+			statusLabel.setText("Selection: " + methods.size() + " method.");
 			Node method = methods.one();
 			try {
 				File extractedJar = getOrCreateExtractedJar(method);
 				textArea.setText("...\n" + decompileMethod(extractedJar, method) + "\n...");
 			} catch (Exception e) {
-				String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
 				textArea.setText("...\nERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n...");
-				Log.warning("Decompilation Error in " + qualifiedMethod, e);
 			}
 		}
 	}
@@ -274,11 +296,22 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	
 	@Override
 	public void indexBecameUnaccessible() {
-		textArea.setText("Map a Jimple project.");
+		statusLabel.setText("Map a Jimple project.");
 	}
 
 	@Override
 	public void indexBecameAccessible() {
-		textArea.setText("Empty Selection.");
+		statusLabel.setText("Empty Selection.");
+	}
+	
+	@Override
+	public void dispose(){
+		lastSelectedMethodSet.clear();
+		try {
+			delete(tempDirectory);
+		} catch (FileNotFoundException e) {
+			// just a best effort...
+		}
+		super.dispose();
 	}
 }
