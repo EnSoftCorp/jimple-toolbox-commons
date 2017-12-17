@@ -49,5 +49,17 @@
    <extension point="com.ensoftcorp.open.commons.language.analysis">
       <language-specific-analysis class="com.ensoftcorp.open.jimple.commons.analysis.CallSiteAnalysis"></language-specific-analysis>
    </extension>
+   
+   <!-- extension for CFR Decompiler Correspondence view -->
+   <extension
+         point="org.eclipse.ui.views">
+      <view
+            category="com.ensoftcorp.open.commons.views.categories.toolbox"
+            class="com.ensoftcorp.open.jimple.commons.ui.views.decompiler.CFRDecompilerCorrespondenceView"
+            icon="icons/partial.gif"
+            id="com.ensoftcorp.open.jimple.commons.ui.views.decompiler"
+            name="CFR Decompiler Correspondence">
+      </view>
+   </extension>
 
 </plugin>
