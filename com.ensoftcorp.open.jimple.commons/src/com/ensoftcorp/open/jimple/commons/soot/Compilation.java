@@ -146,7 +146,7 @@ public class Compilation {
 		argList.add("-output-format"); argList.add(outputBytecode ? "class" : "jimple");
 		
 		// try to preserve as much of the original implementation as possible
-//		argList.add("--p");argList.add("jb");argList.add("use-original-names:true");
+		argList.add("--p");argList.add("jb");argList.add("use-original-names:true");
         argList.add("--p");argList.add("jb");argList.add("stabilize-local-names:true");
         
         // this may be used to forcible generate potentially invalid bytecode

@@ -38,6 +38,7 @@ import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.index.common.SourceCorrespondence;
 import com.ensoftcorp.atlas.core.log.Log;
+import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.utilities.NodeSourceCorrespondenceSorter;
@@ -58,6 +59,8 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	private Label statusLabel;
 	private RSyntaxTextArea textArea;
 	
+	private boolean listening = true;
+	
 	public CFRDecompilerCorrespondenceView() {
 		setPartName("CFR Decompiler Correspondence");
 		setTitleImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/partial.gif"));
@@ -70,6 +73,19 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			compiledClassesDirectory.mkdirs();
 		} catch (IOException e) {
 			Log.error("Could not create temp directory.", e);
+		}
+	}
+	
+	private String stripCFRHeader(String source){
+		// strips the following comment block by knowing its exact length
+//		/*
+//		 * Decompiled with CFR 0_123.
+//		 */
+		final int HEADER_SIZE = 37;
+		if(source.length() > HEADER_SIZE){
+			return source.substring(HEADER_SIZE, source.length());
+		} else {
+			return source;
 		}
 	}
 	
@@ -128,121 +144,179 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 
 	@Override
 	public void setFocus() {}
-
-	private AtlasSet<Node> lastSelectedMethodSet = new AtlasHashSet<Node>();
 	
 	@Override
 	public void selectionChanged(Graph selection) {
-		AtlasSet<Node> filteredSelection = filter(selection);
-		AtlasSet<Node> selectedMethods = Common.toQ(filteredSelection).nodes(XCSG.Method).eval().nodes();
-		AtlasSet<Node> containingMethods = CommonQueries.getContainingMethods(Common.toQ(filteredSelection).difference(Common.toQ(selectedMethods))).eval().nodes();
-		AtlasSet<Node> methods = Common.toQ(selectedMethods).union(Common.toQ(containingMethods)).eval().nodes();
-		
-		boolean sizesEqual = lastSelectedMethodSet.size() == methods.size();
-		boolean setContentsEqual = Common.toQ(lastSelectedMethodSet).intersection(Common.toQ(methods)).eval().nodes().size() == lastSelectedMethodSet.size();
-		if(sizesEqual && setContentsEqual){
-			// effectively the same selection...no need to recompute results
-			// however we might want to update marked occurrences
-			markOccurrences(filteredSelection);
+		if(!listening){
+			// we are processing another selection...
 			return;
-		} else {
-			lastSelectedMethodSet.clear();
-			lastSelectedMethodSet.addAll(methods);
+		}
+		listening = false;
+		Q filteredSelection = Common.toQ(filter(selection));
+		Q selectedMethods = filteredSelection.nodes(XCSG.Method);
+		Q methodContentSelections = filteredSelection.nodes(XCSG.ControlFlow_Node, XCSG.DataFlow_Node).difference(filteredSelection.nodes(XCSG.Field));
+		Q containingMethods = CommonQueries.getContainingMethods(methodContentSelections);
+		selectedMethods = selectedMethods.union(containingMethods);
+		
+		// weed out the initializers since CFR doesn't seem to support decompiling just class initializers
+		// instead we will compensate by decompiling the whole class
+		Q selectedInitializers = selectedMethods.nodes(XCSG.Constructor).union(selectedMethods.selectNode(XCSG.name, "<init>"), selectedMethods.selectNode(XCSG.name, "<clinit>"));
+		selectedMethods = selectedMethods.difference(selectedInitializers);
+		
+		// selections of fields will resulting decompiling the whole class as well since what good would showing just a method signature do
+		// a really fancy analysis could show just methods that read or write to the field, but currently leaving that for another day...
+		Q selectedFields = filteredSelection.nodes(XCSG.Field);
+		Q selectedClasses = filteredSelection.nodes(XCSG.Classifier).union(selectedFields.parent(), selectedInitializers.parent());
+		
+		// flush out the Qs to sets of nodes
+		AtlasSet<Node> methods = new AtlasHashSet<Node>(selectedMethods.eval().nodes());
+		AtlasSet<Node> classes = new AtlasHashSet<Node>(selectedClasses.eval().nodes());
+		AtlasSet<Node> variableSelections = new AtlasHashSet<Node>(methodContentSelections.nodes(XCSG.DataFlow_Node).eval().nodes());
+		
+		if(!classes.isEmpty() && !methods.isEmpty()){
+			setText("");
+			statusLabel.setText("Mixed selection types not supported.");
+			return;
 		}
 		
-		if(methods.isEmpty()){
-			statusLabel.setText("Empty Selection.");
-		} else if(methods.size() > 1){
-			statusLabel.setText("Selection: " + methods.size() + " methods.");
-			ArrayList<Node> sortedMethods = new ArrayList<Node>((int) methods.size());
-			for(Node method : methods){
-				sortedMethods.add(method);
-			}
-			Collections.sort(sortedMethods, new NodeSourceCorrespondenceSorter());
-			StringBuilder text = new StringBuilder();
-			for(Node method : sortedMethods){
-				text.append("\n...\n");
-				if(SEARCH_FOR_JAR){
-					try {
-						File extractedJar = getOrCreateExtractedJar(method);
+		if(classes.isEmpty()){
+			if(methods.isEmpty()){
+				statusLabel.setText("Empty Selection.");
+			} else if(methods.size() > 1){
+				statusLabel.setText("Selection: " + methods.size() + " methods.");
+				ArrayList<Node> sortedMethods = new ArrayList<Node>((int) methods.size());
+				for(Node method : methods){
+					sortedMethods.add(method);
+				}
+				Collections.sort(sortedMethods, new NodeSourceCorrespondenceSorter());
+				StringBuilder text = new StringBuilder();
+				for(Node method : sortedMethods){
+					text.append("\n\n\n");
+					Node classNode = Common.toQ(method).parent().eval().nodes().one();
+					if(SEARCH_FOR_JAR){
 						try {
-							text.append(decompileMethodFromJar(extractedJar, method));
+							File extractedJar = getOrCreateExtractedJar(classNode);
+							try {
+								text.append(decompileMethodFromJar(extractedJar, method));
+							} catch (Exception e) {
+								String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
+								text.append("CFR ERROR: " + qualifiedMethod);
+							}
 						} catch (Exception e) {
 							String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
-							text.append("CFR ERROR: " + qualifiedMethod);
+							text.append("SEARCH ERROR: " + qualifiedMethod);
 						}
-					} catch (Exception e) {
-						String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
-						text.append("SEARCH ERROR: " + qualifiedMethod);
-					}
-				} else {
-					try {
-						File compiledClass = getOrCreateCompiledClassFile(method);
+					} else {
 						try {
-							text.append(decompileMethodFromClass(compiledClass, method));
+							File compiledClass = getOrCreateCompiledClassFile(classNode);
+							try {
+								text.append(decompileMethodFromClass(compiledClass, method));
+							} catch (Exception e) {
+								String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
+								text.append("CFR ERROR: " + qualifiedMethod);
+							}
 						} catch (Exception e) {
 							String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
-							text.append("CFR ERROR: " + qualifiedMethod);
+							text.append("SOOT ERROR: " + qualifiedMethod);
 						}
-					} catch (Exception e) {
-						String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
-						text.append("SOOT ERROR: " + qualifiedMethod);
 					}
 				}
+				text.append("\n\n");
+				setText(text.toString().trim());
+			} else {
+				Node method = methods.one();
+				statusLabel.setText("Selection: " + CommonQueries.getQualifiedMethodName(method));
+				Node classNode = Common.toQ(method).parent().eval().nodes().one();
+				try {
+					if(SEARCH_FOR_JAR){
+						try {
+							File extractedJar = getOrCreateExtractedJar(classNode);
+							try {
+								setText("\n\n" + decompileMethodFromJar(extractedJar, method) + "\n\n");
+							} catch (Exception e) {
+								setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n\n");
+							}
+						} catch (Exception e) {
+							setText("\n\nSEARCH ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n\n");
+						}
+					} else {
+						try {
+							File compiledClass = getOrCreateCompiledClassFile(classNode);
+							try {
+								setText("\n\n" + decompileMethodFromClass(compiledClass, method) + "\n\n");
+							} catch (Exception e) {
+								setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n\n");
+							}
+						} catch (Exception e) {
+							setText("\n\nSOOT ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n\n");
+						}
+					}
+				} catch (Exception e) {
+					setText("\n\nERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n\n");
+				}
 			}
-			text.append("\n...");
-			textArea.setText(text.toString().trim());
 		} else {
-			statusLabel.setText("Selection: " + methods.size() + " method.");
-			Node method = methods.one();
-			try {
+			if(classes.size() == 1){
+				Node classNode = classes.one();
+				statusLabel.setText("Selection: " + CommonQueries.getQualifiedTypeName(classNode));
 				if(SEARCH_FOR_JAR){
 					try {
-						File extractedJar = getOrCreateExtractedJar(method);
+						File extractedJar = getOrCreateExtractedJar(classNode);
 						try {
-							textArea.setText("...\n" + decompileMethodFromJar(extractedJar, method) + "\n...");
+							setText("\n\n" + decompileClassFromJar(extractedJar, classNode) + "\n\n");
 						} catch (Exception e) {
-							textArea.setText("...\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n...");
+							setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + "\n\n");
 						}
 					} catch (Exception e) {
-						textArea.setText("...\nSEARCH ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n...");
+						setText("\n\nSEARCH ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + "\n\n");
 					}
 				} else {
 					try {
-						File compiledClass = getOrCreateCompiledClassFile(method);
+						File compiledClass = getOrCreateCompiledClassFile(classNode);
 						try {
-							textArea.setText("...\n" + decompileMethodFromClass(compiledClass, method) + "\n...");
+							setText("\n\n" + decompileClass(compiledClass) + "\n\n");
 						} catch (Exception e) {
-							textArea.setText("...\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n...");
+							setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + "\n\n");
 						}
 					} catch (Exception e) {
-						textArea.setText("...\nSOOT ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n...");
+						setText("\n\nSOOT ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + "\n\n");
 					}
 				}
-			} catch (Exception e) {
-				textArea.setText("...\nERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n...");
+			} else if(classes.size() > 2){
+				setText("");
+				statusLabel.setText("Multiple class selections not supported.");
+				return;
+			} else {
+				setText("");
+				statusLabel.setText("Mixed selection types not supported.");
+				return;
 			}
-			markOccurrences(filteredSelection);
 		}
+
+		markOccurrences(variableSelections);
+		listening = true;
+	}
+	
+	public void setText(String text){
+		textArea.setText(text.trim());
 	}
 
-	private void markOccurrences(AtlasSet<Node> selection) {
-		AtlasSet<Node> dataFlowNodes = Common.toQ(selection).nodes(XCSG.DataFlow_Node).eval().nodes();
+	private void markOccurrences(AtlasSet<Node> variableSelections) {
 		boolean occurrencesMarked = false;
-		if(dataFlowNodes.size() == 1){
-			Node df = dataFlowNodes.one();
+		if(variableSelections.size() == 1){
+			Node variable = variableSelections.one();
 			String word = "";
-			if(df.taggedWith(XCSG.Operator)){
+			if(variable.taggedWith(XCSG.Operator)){
 				// operators are a little weird, so skipping
-			} if(df.taggedWith(XCSG.Assignment)) {
-				word = df.getAttr(XCSG.name).toString().trim();
+			} if(variable.taggedWith(XCSG.Assignment)) {
+				word = variable.getAttr(XCSG.name).toString().trim();
 				// remove the "="
 				if(word.endsWith("=")){
 					word = word.substring(0, word.length() - 1);
 					word = word.trim();
 				}
 			} else {
-				word = df.getAttr(XCSG.name).toString().trim();
+				word = variable.getAttr(XCSG.name).toString().trim();
 			}
 			// if we have a word, mark the occurrences of the word
 			if(!word.isEmpty()){
@@ -266,17 +340,17 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	
 	private AtlasSet<Node> filter(Graph selection){
 		return Common.toQ(selection)
-			   .nodes(XCSG.DataFlow_Node, XCSG.ControlFlow_Node, XCSG.Method)
+			   .nodes(XCSG.DataFlow_Node, XCSG.ControlFlow_Node, XCSG.Method, XCSG.Field, XCSG.Classifier)
 			   .nodes(XCSG.Language.Jimple).eval().nodes();
 	}
 	
-	private File getOrCreateCompiledClassFile(Node method) throws IOException, CoreException, SootConversionException {
+	private File getOrCreateCompiledClassFile(Node classNode) throws IOException, CoreException, SootConversionException {
 		if(compiledClassesDirectory == null){
 			throw new FileNotFoundException("Could not access temporary compiled class file directory.");
 		} else {
-			SourceCorrespondence sc = (SourceCorrespondence) method.getAttr(XCSG.sourceCorrespondence);
+			SourceCorrespondence sc = (SourceCorrespondence) classNode.getAttr(XCSG.sourceCorrespondence);
 			if(sc != null){
-				// compiles all of the jimple in the corresponding project...might as well do as much as we can in one pass...
+				// compiles all of the jimple in the corresponding project\nmight as well do as much as we can in one pass\n
 				IProject project = sc.sourceFile.getProject();
 				File projectClassesDirectory = new File(compiledClassesDirectory.getAbsolutePath() + File.separator + project.getName());
 				if(!projectClassesDirectory.exists()){
@@ -286,9 +360,11 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 					boolean allowPhantomReferences = true;
 					boolean outputBytecode = true;
 					boolean jarify = false;
+					String previousText = statusLabel.getText();
+					statusLabel.setText("Compiling Jimple in " + project.getName() + "...");
 					Compilation.compile(project, jimpleDirectory, outputDirectory, allowPhantomReferences, new ArrayList<File>(), outputBytecode, jarify);
+					statusLabel.setText(previousText);
 				}
-				Node classNode = Common.toQ(method).parent().nodes(XCSG.Classifier).eval().nodes().one();
 				String qualifiedClass = CommonQueries.getQualifiedTypeName(classNode);
 				File classFile = new File(projectClassesDirectory.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
 				if(!classFile.exists()){
@@ -297,18 +373,18 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 					return classFile;
 				}
 			} else {
-				throw new FileNotFoundException("Could not locate corresponding Jimple file for method " + method.getAttr(XCSG.name).toString());
+				throw new FileNotFoundException("Could not locate corresponding Jimple file for class " + classNode.getAttr(XCSG.name).toString());
 			}
 		}
 	}
 	
-	private File getOrCreateExtractedJar(Node method) throws FileNotFoundException {
+	private File getOrCreateExtractedJar(Node classNode) throws FileNotFoundException {
 		if(extractedJarsDirectory == null){
 			throw new FileNotFoundException("Could not access temporary Jar extraction directory.");
 		} else {
-			Node container = Common.toQ(method).containers().nodes(XCSG.Library, XCSG.Project).eval().nodes().one();
+			Node container = Common.toQ(classNode).containers().nodes(XCSG.Library, XCSG.Project).eval().nodes().one();
 			if(container == null){
-				throw new IllegalArgumentException("Method " + method.getAttr(XCSG.name).toString() + " is not contained in a library or project.");
+				throw new IllegalArgumentException("Class " + classNode.getAttr(XCSG.name).toString() + " is not contained in a library or project.");
 			} else {
 				File jarFile = null;
 				if(container.taggedWith(XCSG.Library)){
@@ -325,7 +401,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 						if(containerFile.exists()){
 							jarFile = containerFile;
 						} else {
-							// no source correspondence...search indexed projects for jars
+							// no source correspondence\nsearch indexed projects for jars
 							for(Node projectNode : Common.universe().nodes(XCSG.Project).eval().nodes()){
 								IProject project = WorkspaceUtils.getProject(projectNode.getAttr(XCSG.name).toString());
 								if(project.exists()){
@@ -342,12 +418,12 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 					}
 				} else {
 					// TODO: how to find corresponding jar for a project selection?
-					// annoying we don't even know the jar name for this case...
+					// annoying we don't even know the jar name for this case\n
 					throw new UnsupportedOperationException("Selections within project containers are currently not supported.");
 				}
 				
 				if(jarFile == null){
-					throw new FileNotFoundException("Could not find corresponding Jar file for method " + method.getAttr(XCSG.name).toString() + ".");
+					throw new FileNotFoundException("Could not find corresponding Jar file for class " + classNode.getAttr(XCSG.name).toString() + ".");
 				}
 				
 				File extractedJarDirectory = new File(extractedJarsDirectory.getAbsolutePath() + File.separator + jarFile.getName());
@@ -391,37 +467,78 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		return jimple;
 	}
 	
-	private String decompileMethodFromJar(File extractedJar, Node method){
-		Node classNode = Common.toQ(method).parent().nodes(XCSG.Classifier).eval().nodes().one();
-		if(classNode == null){
-			return method.getAttr(XCSG.name).toString() + " has no containing class.";
+	private String decompileClassFromJar(File extractedJar, Node classNode){
+		if(!classNode.taggedWith(XCSG.Classifier)){
+			throw new IllegalArgumentException("Parameter methodNode must be an XCSG.Classifier.");
+		}
+		String qualifiedClass = CommonQueries.getQualifiedTypeName(classNode);
+		File classFile = new File(extractedJar.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
+		if(!classFile.exists()){
+			return "Could not find corresponding class file: " + classFile.getAbsolutePath();
 		} else {
-			String qualifiedClass = CommonQueries.getQualifiedTypeName(classNode);
-			File classFile = new File(extractedJar.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
-			if(!classFile.exists()){
-				return "Could not find corresponding class file: " + classFile.getAbsolutePath();
-			} else {
-				return decompileMethodFromClass(classFile, method);
-			}
+			return decompileClass(classFile);
 		}
 	}
 	
-	private String decompileMethodFromClass(File classFile, Node method){
-		String[] args = new String[]{classFile.getAbsolutePath(), method.getAttr(XCSG.name).toString(), "--silent"};
+	private String decompileMethodFromJar(File extractedJar, Node methodNode){
+		if(!methodNode.taggedWith(XCSG.Method)){
+			throw new IllegalArgumentException("Parameter methodNode must be an XCSG.Method.");
+		}
+		if(methodNode.taggedWith(XCSG.Constructor) || methodNode.getAttr(XCSG.name).toString().equals("<init>") || methodNode.getAttr(XCSG.name).toString().equals("<clinit>")){
+			throw new IllegalArgumentException("Parameter methodNode must not be a constructor or initializer method.");
+		}
+		Node classNode = Common.toQ(methodNode).parent().eval().nodes().one();
+		String qualifiedClass = CommonQueries.getQualifiedTypeName(classNode);
+		File classFile = new File(extractedJar.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
+		if(!classFile.exists()){
+			return "Could not find corresponding class file: " + classFile.getAbsolutePath();
+		} else {
+			return decompileMethodFromClass(classFile, methodNode);
+		}
+	}
+	
+	private String decompileClass(File classFile){
+		String[] args = new String[]{classFile.getAbsolutePath(), "--silent"};
+		return stripCFRHeader(runCFR(args));
+	}
+	
+	private String decompileMethodFromClass(File classFile, Node methodNode){
+		if(!methodNode.taggedWith(XCSG.Method)){
+			throw new IllegalArgumentException("Parameter methodNode must be an XCSG.Method.");
+		}
+		if(methodNode.taggedWith(XCSG.Constructor) || methodNode.getAttr(XCSG.name).toString().equals("<init>") || methodNode.getAttr(XCSG.name).toString().equals("<clinit>")){
+			throw new IllegalArgumentException("Parameter methodNode must not be a constructor or initializer method.");
+		}
+		String methodName = methodNode.getAttr(XCSG.name).toString();
+		String[] args = new String[]{classFile.getAbsolutePath(), methodName, "--silent"};
+		return runCFR(args);
+	}
 
+	private String runCFR(String[] args) {
 		// temporarily redirect System.out to byte array
-	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-	    PrintStream alternatePrintStream = new PrintStream(baos);
+	    ByteArrayOutputStream stdoutbaos = new ByteArrayOutputStream();
+	    PrintStream alternatePrintStream = new PrintStream(stdoutbaos);
+	    ByteArrayOutputStream stderrbaos = new ByteArrayOutputStream();
+	    PrintStream alternatePrintErrorStream = new PrintStream(stderrbaos);
 	    PrintStream originalPrintStream = System.out;
+	    PrintStream originalPrintErrorStream = System.err;
 	    try {
 	    	System.setOut(alternatePrintStream);
+	    	System.setErr(alternatePrintErrorStream);
 	    	org.benf.cfr.reader.Main.main(args);
 	    	System.out.flush();
+	    	System.err.flush();
 	    } finally {
 	    	System.setOut(originalPrintStream);
+	    	System.setErr(originalPrintErrorStream);
 	    }
-	    
-	    return baos.toString().trim();
+	    String result = stdoutbaos.toString().trim();
+	    String error = stderrbaos.toString().trim();
+	    if(!error.isEmpty() && result.isEmpty()){
+	    	throw new RuntimeException("CFR Error\n" + error);
+	    } else {
+	    	return result;
+	    }
 	}
 	
 	@Override
@@ -436,7 +553,6 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	
 	@Override
 	public void dispose(){
-		lastSelectedMethodSet.clear();
 		try {
 			delete(tempDirectory);
 		} catch (FileNotFoundException e) {
