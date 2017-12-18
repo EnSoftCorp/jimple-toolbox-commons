@@ -112,9 +112,12 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 				if (e.getClickCount() == 1) {
 					textArea.clearMarkAllHighlights();
 				} else if (e.getClickCount() == 2) {
-					String word = textArea.getSelectedText().trim();
-					if (word != null && !word.isEmpty()){
-						markOccurrences(word);
+					String word = textArea.getSelectedText();
+					if(word != null){
+						word = word.trim();
+						if (!word.isEmpty()){
+							markOccurrences(word);
+						}
 					}
 				}
 			}
