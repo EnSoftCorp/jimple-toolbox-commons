@@ -1,6 +1,8 @@
 package com.ensoftcorp.open.jimple.commons.ui.views.decompiler;
 
 import java.awt.Frame;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,6 +29,8 @@ import org.fife.rsyntaxtextarea.themes.Themes;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
+import org.fife.ui.rtextarea.SearchContext;
+import org.fife.ui.rtextarea.SearchEngine;
 
 import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.Node;
@@ -83,13 +87,32 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	public void createPartControl(Composite parent) {
 		parent.setLayout(new GridLayout(1, false));
 		
-		textArea = new RSyntaxTextArea(5, 5);
+		// add a syntax highlighted text area
+		// size will grow on demand in scroll panel, this is really just a min size
+		textArea = new RSyntaxTextArea(5, 5); 
 		textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
 		textArea.setCodeFoldingEnabled(true);
+		textArea.setAntiAliasingEnabled(true);
 		textArea.setEditable(false);
 		if(Themes.ECLIPSE != null){
 			Themes.ECLIPSE.apply(textArea);
 		}
+		
+		// add a mark occurrences helper
+		// adapted from: https://github.com/bobbylight/RSyntaxTextArea/issues/88
+		textArea.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (e.getClickCount() == 1) {
+					textArea.clearMarkAllHighlights();
+				} else if (e.getClickCount() == 2) {
+					String word = textArea.getSelectedText().trim();
+					if (word != null && !word.isEmpty()){
+						markOccurrences(word);
+					}
+				}
+			}
+		});
 		
 		// place highlighted text inside a scroll panel
 		RTextScrollPane scrollPanel = new RTextScrollPane(textArea);
@@ -129,6 +152,8 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		boolean setContentsEqual = Common.toQ(lastSelectedMethodSet).intersection(Common.toQ(methods)).eval().nodes().size() == lastSelectedMethodSet.size();
 		if(sizesEqual && setContentsEqual){
 			// effectively the same selection...no need to recompute results
+			// however we might want to update marked occurrences
+			markOccurrences(filteredSelection);
 			return;
 		} else {
 			lastSelectedMethodSet.clear();
@@ -167,7 +192,46 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			} catch (Exception e) {
 				textArea.setText("...\nERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n...");
 			}
+			markOccurrences(filteredSelection);
 		}
+	}
+
+	private void markOccurrences(AtlasSet<Node> selection) {
+		AtlasSet<Node> dataFlowNodes = Common.toQ(selection).nodes(XCSG.DataFlow_Node).eval().nodes();
+		boolean occurrencesMarked = false;
+		if(dataFlowNodes.size() == 1){
+			Node df = dataFlowNodes.one();
+			String word = "";
+			if(df.taggedWith(XCSG.Operator)){
+				// operators are a little weird, so skipping
+			} if(df.taggedWith(XCSG.Assignment)) {
+				word = df.getAttr(XCSG.name).toString().trim();
+				// remove the "="
+				if(word.endsWith("=")){
+					word = word.substring(0, word.length() - 1);
+					word = word.trim();
+				}
+			} else {
+				word = df.getAttr(XCSG.name).toString().trim();
+			}
+			// if we have a word, mark the occurrences of the word
+			if(!word.isEmpty()){
+				markOccurrences(word);
+				occurrencesMarked = true;
+			}
+		}
+		if(!occurrencesMarked){
+			textArea.clearMarkAllHighlights();
+		}
+	}
+
+	private void markOccurrences(String word) {
+		textArea.clearMarkAllHighlights();
+		SearchContext context = new SearchContext(word);
+		context.setMarkAll(true);
+		context.setMatchCase(true);
+		context.setWholeWord(true);
+		SearchEngine.markAll(textArea, context);
 	}
 	
 	private AtlasSet<Node> filter(Graph selection){
