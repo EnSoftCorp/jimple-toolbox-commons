@@ -147,11 +147,18 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	
 	@Override
 	public void selectionChanged(Graph selection) {
-		if(!listening){
-			// we are processing another selection...
-			return;
+		synchronized (CFRDecompilerCorrespondenceView.class){
+			if(!listening){
+				// we are processing another selection...
+				return;
+			}
+			listening = false;
+			processSelection(selection);
+			listening = true;
 		}
-		listening = false;
+	}
+
+	private void processSelection(Graph selection) {
 		Q filteredSelection = Common.toQ(filter(selection));
 		Q selectedMethods = filteredSelection.nodes(XCSG.Method);
 		Q methodContentSelections = filteredSelection.nodes(XCSG.ControlFlow_Node, XCSG.DataFlow_Node).difference(filteredSelection.nodes(XCSG.Field));
@@ -191,7 +198,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 				Collections.sort(sortedMethods, new NodeSourceCorrespondenceSorter());
 				StringBuilder text = new StringBuilder();
 				for(Node method : sortedMethods){
-					text.append("\n\n\n");
+					text.append("\n\n");
 					Node classNode = Common.toQ(method).parent().eval().nodes().one();
 					if(SEARCH_FOR_JAR){
 						try {
@@ -294,7 +301,6 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		}
 
 		markOccurrences(variableSelections);
-		listening = true;
 	}
 	
 	public void setText(String text){
