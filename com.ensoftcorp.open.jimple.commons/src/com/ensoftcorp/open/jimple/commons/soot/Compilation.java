@@ -67,8 +67,26 @@ public class Compilation {
 	 * @throws SootConversionException 
 	 */
 	public static void compile(IProject project, File jimpleDirectory, File outputJar, boolean allowPhantomReferences, List<File> libraries, boolean outputBytecode) throws IOException, CoreException, SootConversionException {
+		compile(project, jimpleDirectory, outputJar, allowPhantomReferences, libraries, outputBytecode, true);
+	}
+	
+	/**
+	 * Compiles the Jimple in the given project to a jar
+	 * @param project The primary project to compile (referenced projects will be considered automatically)
+	 * @param jimpleDirectory The project's root Jimple directory
+	 * @param outputJar The output file location to write the resulting jar file
+	 * @param allowPhantomReferences Allows phantom references to exist
+	 * @param libraries A list of file paths to library dependencies or directories containing multiple library dependencies
+	 * @param outputBytecode If true the jar consists of class files else the jar consists of jimple files
+	 * @param transforms An optional array of program transformations to apply before compilation
+	 * @param jarify If true the the output will be written to a jar file, else an uncompressed directory
+	 * @throws IOException
+	 * @throws CoreException
+	 * @throws SootConversionException 
+	 */
+	public static void compile(IProject project, File jimpleDirectory, File output, boolean allowPhantomReferences, List<File> libraries, boolean outputBytecode, boolean jarify) throws IOException, CoreException, SootConversionException {	
 		// make sure there is a directory to write the output to
-		File outputDirectory = outputJar.getParentFile();
+		File outputDirectory = output.getParentFile();
 		if(!outputDirectory.exists()){
 			outputDirectory.mkdirs();
 		}
@@ -142,7 +160,8 @@ public class Compilation {
 		argList.add("-asm-backend");
 		
 		// output classes to a jar file
-		argList.add("-output-dir"); argList.add(outputJar.getCanonicalPath()); argList.add("-output-jar");
+		argList.add("-output-dir"); argList.add(output.getCanonicalPath()); 
+		if(jarify) argList.add("-output-jar");
 		
 		String[] sootArgs = argList.toArray(new String[argList.size()]);
 

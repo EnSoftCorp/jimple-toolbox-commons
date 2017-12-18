@@ -45,43 +45,33 @@ import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
 import com.ensoftcorp.open.commons.utilities.selection.GraphSelectionListenerView;
 import com.ensoftcorp.open.java.commons.analysis.CommonQueries;
 import com.ensoftcorp.open.java.commons.bytecode.JarInspector;
+import com.ensoftcorp.open.jimple.commons.soot.Compilation;
+import com.ensoftcorp.open.jimple.commons.soot.SootConversionException;
 
 public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView {
 	
+	private static final boolean SEARCH_FOR_JAR = false;
+	
 	private File tempDirectory = null;
+	private File extractedJarsDirectory = null;
+	private File compiledClassesDirectory = null;
+	private Label statusLabel;
+	private RSyntaxTextArea textArea;
 	
 	public CFRDecompilerCorrespondenceView() {
 		setPartName("CFR Decompiler Correspondence");
 		setTitleImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/partial.gif"));
-		
 		try {
-			tempDirectory = Files.createTempDirectory("CFRDecompilerExtractedJars").toFile();
+			tempDirectory = Files.createTempDirectory("CFRDecompiler").toFile();
 			tempDirectory.deleteOnExit(); // cleanup later if something bad happens
+			extractedJarsDirectory = new File(tempDirectory.getAbsolutePath() + File.separator + "ExtractedJars");
+			extractedJarsDirectory.mkdirs();
+			compiledClassesDirectory = new File(tempDirectory.getAbsolutePath() + File.separator + "CompiledClasses");
+			compiledClassesDirectory.mkdirs();
 		} catch (IOException e) {
 			Log.error("Could not create temp directory.", e);
 		}
 	}
-	
-	/**
-	 * Helper function to recursively delete a file or directory
-	 * @param file
-	 * @throws FileNotFoundException
-	 */
-	private static void delete(File file) throws FileNotFoundException {
-		if(file.exists()) {
-			if (file.isDirectory()) {
-				for (File c : file.listFiles()) {
-					delete(c);
-				}
-			}
-			if (!file.delete()){
-				throw new FileNotFoundException("Failed to delete file: " + file);
-			}
-		}
-	}
-
-	private Label statusLabel;
-	private RSyntaxTextArea textArea;
 	
 	@Override
 	public void createPartControl(Composite parent) {
@@ -172,13 +162,32 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			StringBuilder text = new StringBuilder();
 			for(Node method : sortedMethods){
 				text.append("\n...\n");
-				try {
-					File extractedJar = getOrCreateExtractedJar(method);
-					text.append(decompileMethod(extractedJar, method));
-				} catch (Exception e) {
-					String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
-					text.append("ERROR: " + qualifiedMethod);
-					Log.warning("Decompilation Error in " + qualifiedMethod, e);
+				if(SEARCH_FOR_JAR){
+					try {
+						File extractedJar = getOrCreateExtractedJar(method);
+						try {
+							text.append(decompileMethodFromJar(extractedJar, method));
+						} catch (Exception e) {
+							String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
+							text.append("CFR ERROR: " + qualifiedMethod);
+						}
+					} catch (Exception e) {
+						String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
+						text.append("SEARCH ERROR: " + qualifiedMethod);
+					}
+				} else {
+					try {
+						File compiledClass = getOrCreateCompiledClassFile(method);
+						try {
+							text.append(decompileMethodFromClass(compiledClass, method));
+						} catch (Exception e) {
+							String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
+							text.append("CFR ERROR: " + qualifiedMethod);
+						}
+					} catch (Exception e) {
+						String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
+						text.append("SOOT ERROR: " + qualifiedMethod);
+					}
 				}
 			}
 			text.append("\n...");
@@ -187,8 +196,29 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			statusLabel.setText("Selection: " + methods.size() + " method.");
 			Node method = methods.one();
 			try {
-				File extractedJar = getOrCreateExtractedJar(method);
-				textArea.setText("...\n" + decompileMethod(extractedJar, method) + "\n...");
+				if(SEARCH_FOR_JAR){
+					try {
+						File extractedJar = getOrCreateExtractedJar(method);
+						try {
+							textArea.setText("...\n" + decompileMethodFromJar(extractedJar, method) + "\n...");
+						} catch (Exception e) {
+							textArea.setText("...\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n...");
+						}
+					} catch (Exception e) {
+						textArea.setText("...\nSEARCH ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n...");
+					}
+				} else {
+					try {
+						File compiledClass = getOrCreateCompiledClassFile(method);
+						try {
+							textArea.setText("...\n" + decompileMethodFromClass(compiledClass, method) + "\n...");
+						} catch (Exception e) {
+							textArea.setText("...\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n...");
+						}
+					} catch (Exception e) {
+						textArea.setText("...\nSOOT ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n...");
+					}
+				}
 			} catch (Exception e) {
 				textArea.setText("...\nERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n...");
 			}
@@ -240,9 +270,41 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			   .nodes(XCSG.Language.Jimple).eval().nodes();
 	}
 	
+	private File getOrCreateCompiledClassFile(Node method) throws IOException, CoreException, SootConversionException {
+		if(compiledClassesDirectory == null){
+			throw new FileNotFoundException("Could not access temporary compiled class file directory.");
+		} else {
+			SourceCorrespondence sc = (SourceCorrespondence) method.getAttr(XCSG.sourceCorrespondence);
+			if(sc != null){
+				// compiles all of the jimple in the corresponding project...might as well do as much as we can in one pass...
+				IProject project = sc.sourceFile.getProject();
+				File projectClassesDirectory = new File(compiledClassesDirectory.getAbsolutePath() + File.separator + project.getName());
+				if(!projectClassesDirectory.exists()){
+					projectClassesDirectory.mkdirs();
+					File jimpleDirectory = Compilation.getJimpleDirectory(new File(project.getLocation().toOSString()));
+					File outputDirectory = projectClassesDirectory;
+					boolean allowPhantomReferences = true;
+					boolean outputBytecode = true;
+					boolean jarify = false;
+					Compilation.compile(project, jimpleDirectory, outputDirectory, allowPhantomReferences, new ArrayList<File>(), outputBytecode, jarify);
+				}
+				Node classNode = Common.toQ(method).parent().nodes(XCSG.Classifier).eval().nodes().one();
+				String qualifiedClass = CommonQueries.getQualifiedTypeName(classNode);
+				File classFile = new File(projectClassesDirectory.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
+				if(!classFile.exists()){
+					throw new FileNotFoundException("Could not find generated class file: " + classFile.getAbsolutePath());
+				} else {
+					return classFile;
+				}
+			} else {
+				throw new FileNotFoundException("Could not locate corresponding Jimple file for method " + method.getAttr(XCSG.name).toString());
+			}
+		}
+	}
+	
 	private File getOrCreateExtractedJar(Node method) throws FileNotFoundException {
-		if(tempDirectory == null){
-			throw new FileNotFoundException("Could not access temp directory.");
+		if(extractedJarsDirectory == null){
+			throw new FileNotFoundException("Could not access temporary Jar extraction directory.");
 		} else {
 			Node container = Common.toQ(method).containers().nodes(XCSG.Library, XCSG.Project).eval().nodes().one();
 			if(container == null){
@@ -288,7 +350,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 					throw new FileNotFoundException("Could not find corresponding Jar file for method " + method.getAttr(XCSG.name).toString() + ".");
 				}
 				
-				File extractedJarDirectory = new File(tempDirectory.getAbsolutePath() + File.separator + jarFile.getName());
+				File extractedJarDirectory = new File(extractedJarsDirectory.getAbsolutePath() + File.separator + jarFile.getName());
 				if(extractedJarDirectory.exists()){
 					return extractedJarDirectory;
 				} else {
@@ -329,7 +391,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		return jimple;
 	}
 	
-	private String decompileMethod(File extractedJar, Node method){
+	private String decompileMethodFromJar(File extractedJar, Node method){
 		Node classNode = Common.toQ(method).parent().nodes(XCSG.Classifier).eval().nodes().one();
 		if(classNode == null){
 			return method.getAttr(XCSG.name).toString() + " has no containing class.";
@@ -339,23 +401,27 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			if(!classFile.exists()){
 				return "Could not find corresponding class file: " + classFile.getAbsolutePath();
 			} else {
-				String[] args = new String[]{classFile.getAbsolutePath(), method.getAttr(XCSG.name).toString(), "--silent"};
-
-				// temporarily redirect System.out to byte array
-			    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			    PrintStream alternatePrintStream = new PrintStream(baos);
-			    PrintStream originalPrintStream = System.out;
-			    try {
-			    	System.setOut(alternatePrintStream);
-			    	org.benf.cfr.reader.Main.main(args);
-			    	System.out.flush();
-			    } finally {
-			    	System.setOut(originalPrintStream);
-			    }
-			    
-			    return baos.toString().trim();
+				return decompileMethodFromClass(classFile, method);
 			}
 		}
+	}
+	
+	private String decompileMethodFromClass(File classFile, Node method){
+		String[] args = new String[]{classFile.getAbsolutePath(), method.getAttr(XCSG.name).toString(), "--silent"};
+
+		// temporarily redirect System.out to byte array
+	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	    PrintStream alternatePrintStream = new PrintStream(baos);
+	    PrintStream originalPrintStream = System.out;
+	    try {
+	    	System.setOut(alternatePrintStream);
+	    	org.benf.cfr.reader.Main.main(args);
+	    	System.out.flush();
+	    } finally {
+	    	System.setOut(originalPrintStream);
+	    }
+	    
+	    return baos.toString().trim();
 	}
 	
 	@Override
@@ -377,5 +443,23 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			// just a best effort...
 		}
 		super.dispose();
+	}
+	
+	/**
+	 * Helper function to recursively delete a file or directory
+	 * @param file
+	 * @throws FileNotFoundException
+	 */
+	private static void delete(File file) throws FileNotFoundException {
+		if(file.exists()) {
+			if (file.isDirectory()) {
+				for (File c : file.listFiles()) {
+					delete(c);
+				}
+			}
+			if (!file.delete()){
+				throw new FileNotFoundException("Failed to delete file: " + file);
+			}
+		}
 	}
 }
