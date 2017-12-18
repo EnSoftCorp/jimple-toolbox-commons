@@ -15,10 +15,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.swing.JComponent;
 import javax.swing.ScrollPaneConstants;
 
+import org.eclipse.albireo.SWT_AWT_mac;
+import org.eclipse.albireo.core.SwingControl;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ICoreRunnable;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
@@ -27,6 +33,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.wb.swt.ResourceManager;
 import org.fife.rsyntaxtextarea.themes.Themes;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -46,6 +53,7 @@ import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.utilities.NodeSourceCorrespondenceSorter;
+import com.ensoftcorp.open.commons.utilities.OSUtils;
 import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
 import com.ensoftcorp.open.commons.utilities.selection.GraphSelectionListenerView;
 import com.ensoftcorp.open.java.commons.analysis.CommonQueries;
@@ -95,48 +103,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	@Override
 	public void createPartControl(Composite parent) {
 		parent.setLayout(new GridLayout(1, false));
-		
-		// add a syntax highlighted text area
-		// size will grow on demand in scroll panel, this is really just a min size
-		textArea = new RSyntaxTextArea(5, 5); 
-		textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
-		textArea.setCodeFoldingEnabled(true);
-		textArea.setAntiAliasingEnabled(true);
-		textArea.setEditable(false);
-		if(Themes.ECLIPSE != null){
-			Themes.ECLIPSE.apply(textArea);
-		}
-		
-		// add a mark occurrences helper
-		// adapted from: https://github.com/bobbylight/RSyntaxTextArea/issues/88
-		textArea.addMouseListener(new MouseAdapter(){
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				if (e.getClickCount() == 1) {
-					textArea.clearMarkAllHighlights();
-				} else if (e.getClickCount() == 2) {
-					String word = textArea.getSelectedText();
-					if(word != null){
-						word = word.trim();
-						if (!word.isEmpty()){
-							markOccurrences(word);
-						}
-					}
-				}
-			}
-		});
-		
-		// place highlighted text inside a scroll panel
-		RTextScrollPane scrollPanel = new RTextScrollPane(textArea);
-		scrollPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-		scrollPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		
-		// convert swing component to swt
-		Composite composite = new Composite(parent, SWT.EMBEDDED | SWT.NO_BACKGROUND);
-		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
-		Frame frame = SWT_AWT.new_Frame(composite);
-		frame.add(scrollPanel);
-	
+
 		statusLabel = new Label(parent, SWT.NONE);
 		statusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		if(indexExists()){
@@ -177,7 +144,79 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		decreaseFontSizeAction.setHoverImageDescriptor(enabledDecreaseFontIcon);
 		getViewSite().getActionBars().getToolBarManager().add(decreaseFontSizeAction);
 		
-		registerGraphHandlers();
+		Job registerSwingComponents = Job.create("Register Swing Components", new ICoreRunnable(){
+			SwingControl swingControl = null;
+			@Override
+			public void run(IProgressMonitor monitor) throws CoreException {
+				// create the Swing components on SWT thread
+				PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable(){
+					@Override
+					public void run() {
+						swingControl = new SwingControl(parent, SWT.EMBEDDED | SWT.NO_BACKGROUND){
+
+							@Override
+							protected JComponent createSwingComponent() {
+								// creating the Swing component in AWT thread
+								
+								// add a syntax highlighted text area
+								// size will grow on demand in scroll panel, this is really just a min size
+								textArea = new RSyntaxTextArea(5, 5); 
+								textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+								textArea.setCodeFoldingEnabled(true);
+								textArea.setAntiAliasingEnabled(true);
+								textArea.setEditable(false);
+								if(Themes.ECLIPSE != null){
+									Themes.ECLIPSE.apply(textArea);
+								}
+								
+								// add a mark occurrences helper
+								// adapted from: https://github.com/bobbylight/RSyntaxTextArea/issues/88
+								textArea.addMouseListener(new MouseAdapter(){
+									@Override
+									public void mouseClicked(MouseEvent e) {
+										if (e.getClickCount() == 1) {
+											textArea.clearMarkAllHighlights();
+										} else if (e.getClickCount() == 2) {
+											String word = textArea.getSelectedText();
+											if(word != null){
+												word = word.trim();
+												if (!word.isEmpty()){
+													markOccurrences(word);
+												}
+											}
+										}
+									}
+								});
+								
+								// place highlighted text inside a scroll panel
+								RTextScrollPane scrollPane = new RTextScrollPane(textArea);
+								scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+								scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+								return scrollPane;
+							}
+
+							@Override
+							public Composite getLayoutAncestor() {
+								return parent;
+							}
+							
+						};
+						swingControl.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
+					}
+				});
+				
+				swingControl.initialize();
+				
+//				// register the graph handlers (on the SWT thread)
+//				PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable(){
+//					@Override
+//					public void run() {
+//						registerGraphHandlers();
+//					}
+//				});
+			}
+		});
+		registerSwingComponents.schedule();
 	}
 	
 	private void increaseFontSize(){
