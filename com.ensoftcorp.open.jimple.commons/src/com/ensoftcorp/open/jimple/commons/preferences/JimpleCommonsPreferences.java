@@ -8,7 +8,34 @@ import com.ensoftcorp.open.jimple.commons.log.Log;
 
 public class JimpleCommonsPreferences extends AbstractPreferenceInitializer {
 
-private static boolean initialized = false;
+	private static boolean initialized = false;
+	
+	/**
+	 * Enable/disable using original jars for CFR Decompiler Correspondence view
+	 */
+	public static final String CFR_CORRESPONDENCE_USE_ORIGINAL_JARS = "CFR_CORRESPONDENCE_USE_ORIGINAL_JARS";
+	public static final Boolean CFR_CORRESPONDENCE_USE_ORIGINAL_JARS_DEFAULT = false;
+	private static boolean cfrCorrespondenceUseOriginalJarsValue = CFR_CORRESPONDENCE_USE_ORIGINAL_JARS_DEFAULT;
+	
+	/**
+	 * Configures whether or not to use original jars for CFR Decompiler Correspondence view
+	 */
+	public static void enableCFRCorrespondenceUseOriginalJars(boolean enabled){
+		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
+		preferences.setValue(CFR_CORRESPONDENCE_USE_ORIGINAL_JARS, enabled);
+		loadPreferences();
+	}
+	
+	/**
+	 * Returns true if using the original jars for CFR Decompiler Correspondence view
+	 * @return
+	 */
+	public static boolean isCFRCorrespondenceUseOriginalJarsEnabled(){
+		if(!initialized){
+			loadPreferences();
+		}
+		return cfrCorrespondenceUseOriginalJarsValue;
+	}
 	
 	/**
 	 * Enable/disable decompiled loop identification
@@ -67,6 +94,7 @@ private static boolean initialized = false;
 	@Override
 	public void initializeDefaultPreferences() {
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
+		preferences.setDefault(CFR_CORRESPONDENCE_USE_ORIGINAL_JARS, CFR_CORRESPONDENCE_USE_ORIGINAL_JARS_DEFAULT);
 		preferences.setDefault(RECOVER_DECOMPILED_LOOPS, RECOVER_DECOMPILED_LOOPS_DEFAULT);
 		preferences.setDefault(COMPUTE_LOOP_BOUNDARIES, COMPUTE_LOOP_BOUNDARIES_DEFAULT);
 	}
@@ -76,6 +104,7 @@ private static boolean initialized = false;
 	 */
 	public static void restoreDefaults(){
 		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
+		preferences.setValue(CFR_CORRESPONDENCE_USE_ORIGINAL_JARS, CFR_CORRESPONDENCE_USE_ORIGINAL_JARS_DEFAULT);
 		preferences.setValue(RECOVER_DECOMPILED_LOOPS, RECOVER_DECOMPILED_LOOPS_DEFAULT);
 		preferences.setValue(COMPUTE_LOOP_BOUNDARIES, COMPUTE_LOOP_BOUNDARIES_DEFAULT);
 		loadPreferences();
@@ -87,6 +116,7 @@ private static boolean initialized = false;
 	public static void loadPreferences() {
 		try {
 			IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
+			cfrCorrespondenceUseOriginalJarsValue = preferences.getBoolean(CFR_CORRESPONDENCE_USE_ORIGINAL_JARS);
 			decompiledLoopRecoveryValue = preferences.getBoolean(RECOVER_DECOMPILED_LOOPS);
 			computeLoopBoundariesValue = preferences.getBoolean(COMPUTE_LOOP_BOUNDARIES);
 		} catch (Exception e){

@@ -19,6 +19,7 @@ public class JimpleCommonsPreferencesPage extends FieldEditorPreferencePage impl
 
 	private static final String RECOVER_DECOMPILED_LOOPS_DESCRIPTION = "Recover decompiled loops";
 	private static final String COMPUTE_LOOP_BOUNDARIES_DESCRIPTION = "Compute loop boundary conditions";
+	private static final String CFR_CORRESPONDENCE_USE_ORIGINAL_JARS_DESCRIPTION = "Use original jars if available in CFR Decompiler Correspondence view";
 	
 	private static boolean changeListenerAdded = false;
 	
@@ -48,6 +49,7 @@ public class JimpleCommonsPreferencesPage extends FieldEditorPreferencePage impl
 	protected void createFieldEditors() {
 		addField(new BooleanFieldEditor(JimpleCommonsPreferences.RECOVER_DECOMPILED_LOOPS, "&" + RECOVER_DECOMPILED_LOOPS_DESCRIPTION, getFieldEditorParent()));
 		addField(new BooleanFieldEditor(JimpleCommonsPreferences.COMPUTE_LOOP_BOUNDARIES, "&" + COMPUTE_LOOP_BOUNDARIES_DESCRIPTION, getFieldEditorParent()));
+		addField(new BooleanFieldEditor(JimpleCommonsPreferences.CFR_CORRESPONDENCE_USE_ORIGINAL_JARS, "&" + CFR_CORRESPONDENCE_USE_ORIGINAL_JARS_DESCRIPTION, getFieldEditorParent()));
 	}
 
 }

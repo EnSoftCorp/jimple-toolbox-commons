@@ -50,12 +50,11 @@ import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
 import com.ensoftcorp.open.commons.utilities.selection.GraphSelectionListenerView;
 import com.ensoftcorp.open.java.commons.analysis.CommonQueries;
 import com.ensoftcorp.open.java.commons.bytecode.JarInspector;
+import com.ensoftcorp.open.jimple.commons.preferences.JimpleCommonsPreferences;
 import com.ensoftcorp.open.jimple.commons.soot.Compilation;
 import com.ensoftcorp.open.jimple.commons.soot.SootConversionException;
 
 public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView {
-	
-	private static final boolean SEARCH_FOR_JAR = false;
 	
 	private File tempDirectory = null;
 	private File extractedJarsDirectory = null;
@@ -280,7 +279,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 				for(Node method : sortedMethods){
 					text.append("\n\n");
 					Node classNode = Common.toQ(method).parent().eval().nodes().one();
-					if(SEARCH_FOR_JAR){
+					if(JimpleCommonsPreferences.isCFRCorrespondenceUseOriginalJarsEnabled()){
 						try {
 							File extractedJar = getOrCreateExtractedJar(classNode);
 							try {
@@ -315,7 +314,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 				statusLabel.setText("Selection: " + CommonQueries.getQualifiedMethodName(method));
 				Node classNode = Common.toQ(method).parent().eval().nodes().one();
 				try {
-					if(SEARCH_FOR_JAR){
+					if(JimpleCommonsPreferences.isCFRCorrespondenceUseOriginalJarsEnabled()){
 						try {
 							File extractedJar = getOrCreateExtractedJar(classNode);
 							try {
@@ -346,7 +345,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			if(classes.size() == 1){
 				Node classNode = classes.one();
 				statusLabel.setText("Selection: " + CommonQueries.getQualifiedTypeName(classNode));
-				if(SEARCH_FOR_JAR){
+				if(JimpleCommonsPreferences.isCFRCorrespondenceUseOriginalJarsEnabled()){
 					try {
 						File extractedJar = getOrCreateExtractedJar(classNode);
 						try {
