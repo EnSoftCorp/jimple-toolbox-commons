@@ -1,5 +1,6 @@
 package com.ensoftcorp.open.jimple.commons.ui.views.decompiler;
 
+import java.awt.Font;
 import java.awt.Frame;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -18,6 +19,8 @@ import javax.swing.ScrollPaneConstants;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.awt.SWT_AWT;
 import org.eclipse.swt.layout.GridData;
@@ -28,6 +31,7 @@ import org.eclipse.wb.swt.ResourceManager;
 import org.fife.rsyntaxtextarea.themes.Themes;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rsyntaxtextarea.SyntaxScheme;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.fife.ui.rtextarea.SearchContext;
 import org.fife.ui.rtextarea.SearchEngine;
@@ -133,7 +137,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		Frame frame = SWT_AWT.new_Frame(composite);
 		frame.add(scrollPanel);
-		
+	
 		statusLabel = new Label(parent, SWT.NONE);
 		statusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		if(indexExists()){
@@ -142,7 +146,80 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			statusLabel.setText("Map a Jimple project.");
 		}
 		
+		// add an increase font size button
+		// icon from http://eclipse-icons.i24.cc
+		final Action increaseFontSizeAction = new Action() {
+			public void run() {
+				increaseFontSize();
+			}
+		};
+		increaseFontSizeAction.setText("Increase Font");
+		increaseFontSizeAction.setToolTipText("Increase Font");
+		ImageDescriptor enabledIncreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/add.gif"));
+		ImageDescriptor disabledIncreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/add.gif"));
+		increaseFontSizeAction.setImageDescriptor(enabledIncreaseFontIcon);
+		increaseFontSizeAction.setDisabledImageDescriptor(disabledIncreaseFontIcon);
+		increaseFontSizeAction.setHoverImageDescriptor(enabledIncreaseFontIcon);
+		getViewSite().getActionBars().getToolBarManager().add(increaseFontSizeAction);
+		
+		// add a decrease font size button
+		// icon from http://eclipse-icons.i24.cc
+		final Action decreaseFontSizeAction = new Action() {
+			public void run() {
+				decreaseFontSize();
+			}
+		};
+		decreaseFontSizeAction.setText("Decrease Font");
+		decreaseFontSizeAction.setToolTipText("Decrease Font");
+		ImageDescriptor enabledDecreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/subtract.gif"));
+		ImageDescriptor disabledDecreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/subtract.gif"));
+		decreaseFontSizeAction.setImageDescriptor(enabledDecreaseFontIcon);
+		decreaseFontSizeAction.setDisabledImageDescriptor(disabledDecreaseFontIcon);
+		decreaseFontSizeAction.setHoverImageDescriptor(enabledDecreaseFontIcon);
+		getViewSite().getActionBars().getToolBarManager().add(decreaseFontSizeAction);
+		
 		registerGraphHandlers();
+	}
+	
+	private void increaseFontSize(){
+		Font font = textArea.getFont();
+		int fontSize = font.getSize();
+		Font newFont = font.deriveFont((float)(fontSize+1));
+		setFont(textArea, newFont);
+		textArea.revalidate();
+	}
+	
+	private static final int MIN_SIZE = 8;
+	private void decreaseFontSize(){
+		Font font = textArea.getFont();
+		int fontSize = font.getSize();
+		if(fontSize != MIN_SIZE){
+			Font newFont = font.deriveFont((float)(fontSize-1));
+			setFont(textArea, newFont);
+			textArea.revalidate();
+		}
+	}
+	
+	/**
+	 * Set the font for all token types.
+	 * 
+	 * @param textArea
+	 *            The text area to modify.
+	 * @param font
+	 *            The font to use.
+	 */
+	private void setFont(RSyntaxTextArea textArea, Font font) {
+		if (font != null) {
+			SyntaxScheme ss = textArea.getSyntaxScheme();
+			ss = (SyntaxScheme) ss.clone();
+			for (int i = 0; i < ss.getStyleCount(); i++) {
+				if (ss.getStyle(i) != null) {
+					ss.getStyle(i).font = font;
+				}
+			}
+			textArea.setSyntaxScheme(ss);
+			textArea.setFont(font);
+		}
 	}
 
 	@Override
