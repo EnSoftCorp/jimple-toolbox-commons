@@ -324,10 +324,10 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 							try {
 								setText("\n\n" + decompileMethodFromJar(extractedJar, method) + "\n\n");
 							} catch (Exception e) {
-								setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n\n");
+								setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + ":" + e.getMessage() + "\n\n");
 							}
 						} catch (Exception e) {
-							setText("\n\nSEARCH ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n\n");
+							setText("\n\nSEARCH ERROR: " + CommonQueries.getQualifiedMethodName(method) + ":" + e.getMessage() + "\n\n");
 						}
 					} else {
 						try {
@@ -335,10 +335,10 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 							try {
 								setText("\n\n" + decompileMethodFromClass(compiledClass, method) + "\n\n");
 							} catch (Exception e) {
-								setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n\n");
+								setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + ":" + e.getMessage() + "\n\n");
 							}
 						} catch (Exception e) {
-							setText("\n\nSOOT ERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n\n");
+							setText("\n\nSOOT ERROR: " + CommonQueries.getQualifiedMethodName(method) + ":" + e.getMessage() + "\n\n");
 						}
 					}
 				} catch (Exception e) {
@@ -355,10 +355,10 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 						try {
 							setText("\n\n" + decompileClassFromJar(extractedJar, classNode) + "\n\n");
 						} catch (Exception e) {
-							setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + "\n\n");
+							setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + ":" + e.getMessage() + "\n\n");
 						}
 					} catch (Exception e) {
-						setText("\n\nSEARCH ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + "\n\n");
+						setText("\n\nSEARCH ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + ":" + e.getMessage() + "\n\n");
 					}
 				} else {
 					try {
@@ -366,10 +366,10 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 						try {
 							setText("\n\n" + decompileClass(compiledClass) + "\n\n");
 						} catch (Exception e) {
-							setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + "\n\n");
+							setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + ":" + e.getMessage() + "\n\n");
 						}
 					} catch (Exception e) {
-						setText("\n\nSOOT ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + "\n\n");
+						setText("\n\nSOOT ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + ":" + e.getMessage() + "\n\n");
 					}
 				}
 			} else if(classes.size() > 2){
