@@ -13,7 +13,9 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.swing.ScrollPaneConstants;
 
@@ -50,6 +52,8 @@ import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
 import com.ensoftcorp.open.commons.utilities.selection.GraphSelectionListenerView;
 import com.ensoftcorp.open.java.commons.analysis.CommonQueries;
 import com.ensoftcorp.open.java.commons.bytecode.JarInspector;
+import com.ensoftcorp.open.java.commons.project.ProjectJarProperties;
+import com.ensoftcorp.open.java.commons.project.ProjectJarProperties.Jar;
 import com.ensoftcorp.open.jimple.commons.preferences.JimpleCommonsPreferences;
 import com.ensoftcorp.open.jimple.commons.soot.Compilation;
 import com.ensoftcorp.open.jimple.commons.soot.SootConversionException;
@@ -467,44 +471,41 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		if(extractedJarsDirectory == null){
 			throw new FileNotFoundException("Could not access temporary Jar extraction directory.");
 		} else {
-			Node container = Common.toQ(classNode).containers().nodes(XCSG.Library, XCSG.Project).eval().nodes().one();
+			Set<IProject> indexedProjects = new HashSet<IProject>();
+			for(Node projectNode : Common.universe().nodes(XCSG.Project).eval().nodes()){
+				indexedProjects.add(WorkspaceUtils.getProject(projectNode.getAttr(XCSG.name).toString()));
+			}
+			Set<Jar> indexedProjectJars = new HashSet<Jar>();
+			for(IProject project : indexedProjects){
+				try {
+					indexedProjectJars.addAll(ProjectJarProperties.getJars(project));
+				} catch (Exception e) {
+					Log.warning("Failed to parse project jar properties for project " + project.getName() + ".", e);
+				}
+			}
+			
+			// assuming class nodes are always in jars for jimple
+			Node container = Common.toQ(classNode).containers().nodes(XCSG.Library).eval().nodes().one();
 			if(container == null){
 				throw new IllegalArgumentException("Class " + classNode.getAttr(XCSG.name).toString() + " is not contained in a library or project.");
 			} else {
 				File jarFile = null;
 				if(container.taggedWith(XCSG.Library)){
-					SourceCorrespondence sc = (SourceCorrespondence) container.getAttr(XCSG.sourceCorrespondence);
-					if(sc != null){
-						try {
-							jarFile = WorkspaceUtils.getFile(sc.sourceFile);
-						} catch (CoreException e) {
-							// best effort
-						}
-					} else {
-						// is the container name the file path that exists?
-						File containerFile = new File(container.getAttr(XCSG.name).toString());
-						if(containerFile.exists()){
-							jarFile = containerFile;
-						} else {
-							// no source correspondence\nsearch indexed projects for jars
-							for(Node projectNode : Common.universe().nodes(XCSG.Project).eval().nodes()){
-								IProject project = WorkspaceUtils.getProject(projectNode.getAttr(XCSG.name).toString());
-								if(project.exists()){
-									File projectDirectory = new File(project.getLocation().toOSString());
-									for(File jar : findJars(projectDirectory)){
-										if(jar.getName().equals(containerFile.getName())){
-											jarFile = jar;
-											break;
-										}
-									}
-								}
+					String jarName = new File(container.getAttr(XCSG.name).toString()).getName();
+					Jar match = null;
+					for(Jar jar : indexedProjectJars){
+						if(jar.getFile().getName().equals(jarName)){
+							if(match == null){
+								jarFile = jar.getFile();
+							} else {
+								Log.warning("Found multiple matches for " + jarName);
 							}
 						}
 					}
 				} else {
 					// TODO: how to find corresponding jar for a project selection?
 					// annoying we don't even know the jar name for this case\n
-					throw new UnsupportedOperationException("Selections within project containers are currently not supported.");
+					throw new UnsupportedOperationException("Jimple selections within project containers are currently not supported.");
 				}
 				
 				if(jarFile == null){
@@ -521,10 +522,12 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 						for(String entry : inspector.getJarEntrySet()){
 							byte[] bytes = inspector.extractEntry(entry);
 							File path = new File(extractedJarDirectory.getAbsolutePath() + File.separator + entry.replace("/", File.separator));
-							path.getParentFile().mkdirs();
-							FileOutputStream writer = new FileOutputStream(path);
-							writer.write(bytes);
-							writer.close();
+							if(path.getName().endsWith(".class")){
+								path.getParentFile().mkdirs();
+								FileOutputStream writer = new FileOutputStream(path);
+								writer.write(bytes);
+								writer.close();
+							}
 						}
 						return extractedJarDirectory;
 					} catch (Exception e){
