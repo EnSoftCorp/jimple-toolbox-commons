@@ -2,6 +2,7 @@ package com.ensoftcorp.open.jimple.commons.annotations;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.jar.JarException;
 
 import org.eclipse.core.resources.IProject;
@@ -108,7 +109,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 						// by skipping the code, we just want class and features signatures
 						ClassReader classReader = new ClassReader(bytes);
 						classNode = new ClassNode();
-						classReader.accept(classNode, ClassReader.EXPAND_FRAMES);
+						classReader.accept(classNode, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 					} catch (Exception e){
 						classNode = null;
 						Log.warning("Unable to read class file: " + entry, e);
@@ -151,7 +152,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 						if (methodNode.invisibleAnnotations != null) {
 							for (Object annotationObject : methodNode.invisibleAnnotations) {
 								AnnotationNode annotation = (AnnotationNode) annotationObject;
-								index(library, classNode, methodNode, annotation);
+								index(library, classNode, methodNode, annotation, false);
 							}
 						}
 			    	}
@@ -160,7 +161,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 						if (methodNode.visibleAnnotations != null) {
 							for (Object annotationObject : methodNode.visibleAnnotations) {
 								AnnotationNode annotation = (AnnotationNode) annotationObject;
-								index(library, classNode, methodNode, annotation);
+								index(library, classNode, methodNode, annotation, false);
 							}
 						}
 			    	}
@@ -184,6 +185,26 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 //							}
 //						}
 //			    	}
+					
+					// method parameter annotations
+					for (Object o : classNode.methods) {
+						MethodNode methodNode = (MethodNode) o;
+						if (methodNode.invisibleParameterAnnotations != null) {
+							for (Object annotationObject : methodNode.invisibleParameterAnnotations) {
+								AnnotationNode annotation = (AnnotationNode) annotationObject;
+								index(library, classNode, methodNode, annotation, true);
+							}
+						}
+			    	}
+					for (Object o : classNode.methods) {
+						MethodNode methodNode = (MethodNode) o;
+						if (methodNode.visibleParameterAnnotations != null) {
+							for (Object annotationObject : methodNode.visibleAnnotations) {
+								AnnotationNode annotation = (AnnotationNode) annotationObject;
+								index(library, classNode, methodNode, annotation, true);
+							}
+						}
+			    	}
 					
 					// field annotations
 					for (Object o : classNode.fields) {
@@ -250,10 +271,15 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 			}
 		}
 	}
-	
-	// TODO: consider parameter annotations
+
 	// skipping local variable annotations, we probably won't be able to match those up
-	private static void index(Node library, ClassNode clazz, MethodNode method, AnnotationNode annotation){
+	private static void index(Node library, ClassNode clazz, MethodNode method, AnnotationNode annotation, boolean isParameterAnnotation){
+		
+		if(isParameterAnnotation){
+			// TODO: consider parameter annotations
+			return;
+		}
+		
 		String qualifiedClassName = clazz.name.replace("/", ".");
 		int index = qualifiedClassName.lastIndexOf(".");
 		String className = qualifiedClassName;
@@ -352,11 +378,17 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 		String prefix = "";
 		if(annotation.values != null){
 			for(int i=0; i<annotation.values.size(); i+=2){
-				String attribute = annotation.values.get(i).toString();
-				Object value = annotation.values.get(i+1);
-				String valueString = value.toString();
-				if(value.getClass().equals(String.class)){
-					valueString = "\"" + valueString.replace("\'", "\\'")
+				String attributeName = annotation.values.get(i).toString();
+				Object attributeValue = annotation.values.get(i+1);
+				
+				// TODO: may need to implement recursive descriptor parsing
+				// the following example annotation currently produces the a descriptor array
+				// correct: "ResponseStatus(code=org.springframework.http.HttpStatus.NO_CONTENT)"
+				// current: "ResponseStatus(code=[Lorg/springframework/http/HttpStatus;, NO_CONTENT])"
+				String attributeValueText = attributeValue.getClass().isArray() ? Arrays.deepToString((Object[]) attributeValue) : attributeValue.toString();
+				
+				if(attributeValue.getClass().equals(String.class)){
+					attributeValueText = "\"" + attributeValueText.replace("\'", "\\'")
 											 		.replace("\"", "\\\"")
 											 		.replace("\\", "\\\\")
 											 		.replace("\t", "\\t")
@@ -365,7 +397,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 											 		.replace("\f", "\\f")
 											 		.replace("\n", "\\n") + "\"";
 				}
-				rawAnnotationText += (prefix + (attribute + "=" + valueString));
+				rawAnnotationText += (prefix + (attributeName + "=" + attributeValueText));
 				prefix = ",";
 			}
 		}
