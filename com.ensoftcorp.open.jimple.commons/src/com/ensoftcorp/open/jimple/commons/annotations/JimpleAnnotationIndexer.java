@@ -193,26 +193,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 				Edge annotatedWithEdge = Graph.U.createEdge(classNode, annotationNode);
 				annotatedWithEdge.tag(XCSG.Java.AnnotatedWith);
 				
-				String rawAnnotationText = annotationNode.getAttr(XCSG.name).toString() + "(";
-				String prefix = "";
-				if(annotation.values != null){
-					for(Object object : annotation.values){
-						String value = object.toString();
-						if(value.getClass().equals(String.class)){
-							value = "\"" + value.replace("\'", "\\'")
-										 		.replace("\"", "\\\"")
-										 		.replace("\\", "\\\\")
-										 		.replace("\t", "\\t")
-										 		.replace("\b", "\\b")
-										 		.replace("\r", "\\r")
-										 		.replace("\f", "\\f")
-										 		.replace("\n", "\\n") + "\"";
-						}
-						rawAnnotationText += (prefix + value);
-						prefix = ",";
-					}
-				}
-				rawAnnotationText += ")";
+				String rawAnnotationText = getRawAnnotation(annotation, annotationNode);
 				classNode.putAttr(JavaStopGap.ANNOTATION_RAW_TEXT, rawAnnotationText);
 			}
 		}
@@ -244,13 +225,23 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 					Edge annotatedWithEdge = Graph.U.createEdge(fieldNode, annotationNode);
 					annotatedWithEdge.tag(XCSG.Java.AnnotatedWith);
 					
-					String rawAnnotationText = annotationNode.getAttr(XCSG.name).toString() + "(";
-					String prefix = "";
-					if(annotation.values != null){
-						for(Object object : annotation.values){
-							String value = object.toString();
-							if(value.getClass().equals(String.class)){
-								value = "\"" + value.replace("\'", "\\'")
+					String rawAnnotationText = getRawAnnotation(annotation, annotationNode);
+					fieldNode.putAttr(JavaStopGap.ANNOTATION_RAW_TEXT, rawAnnotationText);
+				}
+			}
+		}
+	}
+
+	private static String getRawAnnotation(AnnotationNode annotation, Node annotationNode) {
+		String rawAnnotationText = annotationNode.getAttr(XCSG.name).toString() + "(";
+		String prefix = "";
+		if(annotation.values != null){
+			for(int i=0; i<annotation.values.size(); i+=2){
+				String attribute = annotation.values.get(i).toString();
+				Object value = annotation.values.get(i+1);
+				String valueString = value.toString();
+				if(value.getClass().equals(String.class)){
+					valueString = "\"" + valueString.replace("\'", "\\'")
 											 		.replace("\"", "\\\"")
 											 		.replace("\\", "\\\\")
 											 		.replace("\t", "\\t")
@@ -258,16 +249,13 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 											 		.replace("\r", "\\r")
 											 		.replace("\f", "\\f")
 											 		.replace("\n", "\\n") + "\"";
-							}
-							rawAnnotationText += (prefix + value);
-							prefix = ",";
-						}
-					}
-					rawAnnotationText += ")";
-					classNode.putAttr(JavaStopGap.ANNOTATION_RAW_TEXT, rawAnnotationText);
 				}
+				rawAnnotationText += (prefix + (attribute + "=" + valueString));
+				prefix = ",";
 			}
 		}
+		rawAnnotationText += ")";
+		return rawAnnotationText;
 	}
 	
 	private static Node getOrCreateAnnotationNode(Node library, AnnotationNode annotation){
