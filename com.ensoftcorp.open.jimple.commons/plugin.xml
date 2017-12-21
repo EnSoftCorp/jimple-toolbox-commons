@@ -30,7 +30,7 @@
    <extension point="com.ensoftcorp.open.commons.codemap">
       <codemap class="com.ensoftcorp.open.jimple.commons.loops.DecompiledLoopIdentificationCodemapStage"></codemap>
       <codemap class="com.ensoftcorp.open.jimple.commons.loops.BoundaryConditionsCodemapStage"></codemap>
-      <!-- <codemap class="com.ensoftcorp.open.jimple.commons.annotations.JimpleAnnotationIndexer"></codemap> -->
+      <codemap class="com.ensoftcorp.open.jimple.commons.annotations.JimpleAnnotationIndexer"></codemap>
    </extension>
    
    <!-- add filter defintions -->

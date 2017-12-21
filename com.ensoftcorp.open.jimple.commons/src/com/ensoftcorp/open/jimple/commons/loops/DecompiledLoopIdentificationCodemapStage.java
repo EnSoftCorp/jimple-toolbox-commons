@@ -31,12 +31,11 @@ public class DecompiledLoopIdentificationCodemapStage extends PrioritizedCodemap
 	public void performIndexing(IProgressMonitor monitor) {
 		try {
 			if(JimpleCommonsPreferences.isDecompiledLoopRecoveryEnabled()){
-				Log.info("Recovering Decompiled Loops...");
+				Log.info("Recovering decompiled loops...");
 				if(Common.universe().nodes(XCSG.ControlFlow_Node).nodes(XCSG.Language.Jimple).eval().nodes().isEmpty()){
 					Log.info("No decompiled loops to detect.");
 				} else {
 					DecompiledLoopIdentification.recoverLoops(monitor);
-					Log.info("Finished Recovering Decompiled Loops");
 				}
 			}
 		} catch (Exception e) {

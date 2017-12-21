@@ -21,7 +21,7 @@ public class BoundaryConditionsCodemapStage extends PrioritizedCodemapStage {
 	
 	@Override
 	public String getDisplayName() {
-		return "Computing loop boundary conditions";
+		return "Computing Loop Boundary Conditions";
 	}
 
 	@Override
@@ -38,9 +38,8 @@ public class BoundaryConditionsCodemapStage extends PrioritizedCodemapStage {
 	public void performIndexing(IProgressMonitor monitor) {
 		try {
 			if(JimpleCommonsPreferences.isDecompiledLoopRecoveryEnabled()){
-				Log.info("Computing Loop Boundary Conditions...");
+				Log.info("Computing loop boundary conditions");
 				BoundaryConditions.run(monitor);
-				Log.info("Finished Computing Loop Boundary Conditions");
 			}
 		} catch (Exception e) {
 			Log.error("Error computing loop boundary conditions", e);

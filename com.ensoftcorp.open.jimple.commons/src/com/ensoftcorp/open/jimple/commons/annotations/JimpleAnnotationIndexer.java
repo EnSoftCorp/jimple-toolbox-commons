@@ -10,6 +10,7 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeAnnotationNode;
 
 import com.ensoftcorp.atlas.core.db.graph.Edge;
 import com.ensoftcorp.atlas.core.db.graph.Graph;
@@ -25,6 +26,8 @@ import com.ensoftcorp.open.java.commons.bytecode.BytecodeUtils;
 import com.ensoftcorp.open.java.commons.bytecode.JarInspector;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties.Jar;
+import com.ensoftcorp.open.java.commons.wishful.JavaStopGap;
+import com.ensoftcorp.open.jimple.commons.preferences.JimpleCommonsPreferences;
 
 public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 
@@ -51,11 +54,34 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 			IProject project = WorkspaceUtils.getProject(projectNode.getAttr(XCSG.name).toString());
 			if(project.exists() && project.isOpen() && project.isAccessible()){
 				try {
-					for(Jar jar : ProjectJarProperties.getJars(project)){
-						try {
-							index(jar.getFile());
-						} catch (Exception e){
-							Log.error("Error indexing " + project.getName() + ":" + jar.getFile().getName() + " annotations.", e);
+					if(JimpleCommonsPreferences.isApplicationJarAnnotationIndexerEnabled()){
+						Log.info("Indexing application jar annotations");
+						for(Jar jar : ProjectJarProperties.getApplicationJars(project)){
+							try {
+								index(jar.getFile());
+							} catch (Exception e){
+								Log.error("Error indexing " + project.getName() + ":" + jar.getFile().getName() + " annotations.", e);
+							}
+						}
+					}
+					if(JimpleCommonsPreferences.isLibraryJarAnnotationIndexerEnabled()){
+						Log.info("Indexing library jar annotations");
+						for(Jar jar : ProjectJarProperties.getLibraryJars(project)){
+							try {
+								index(jar.getFile());
+							} catch (Exception e){
+								Log.error("Error indexing " + project.getName() + ":" + jar.getFile().getName() + " annotations.", e);
+							}
+						}
+					}
+					if(JimpleCommonsPreferences.isRuntimeJarAnnotationIndexerEnabled()){
+						Log.info("Indexing runtime jar annotations");
+						for(Jar jar : ProjectJarProperties.getRuntimeJars(project)){
+							try {
+								index(jar.getFile());
+							} catch (Exception e){
+								Log.error("Error indexing " + project.getName() + ":" + jar.getFile().getName() + " annotations.", e);
+							}
 						}
 					}
 				} catch (Exception e) {
@@ -66,85 +92,102 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 	}
 	
 	public static void index(File jar) throws JarException, IOException {
-		JarInspector inspector = new JarInspector(jar);
-		for(String entry : inspector.getJarEntrySet()){
-			if(entry.endsWith(".class")){
-				byte[] bytes = inspector.extractEntry(entry);
-				ClassNode classNode = null;
-				try {
-					classNode = BytecodeUtils.getClassNode(bytes);
-				} catch (Exception e){
-					Log.warning("Error reading class file: " + entry);
-				}
-				if(classNode == null){
-					continue;
-				}
-				
-				// class annotation
-				if (classNode.invisibleAnnotations != null) {
-					for (Object annotationObject : classNode.invisibleAnnotations) {
-						AnnotationNode annotation = (AnnotationNode) annotationObject;
-						index(classNode, annotation);
+		for(Node library : Common.universe().nodes(XCSG.Library).eval().nodes()){
+			JarInspector inspector = new JarInspector(jar);
+			for(String entry : inspector.getJarEntrySet()){
+				if(entry.endsWith(".class")){
+					byte[] bytes = inspector.extractEntry(entry);
+					ClassNode classNode = null;
+					try {
+						classNode = BytecodeUtils.getClassNode(bytes);
+					} catch (Exception e){
+						Log.warning("Error reading class file: " + entry);
 					}
-				}
-				if (classNode.visibleAnnotations != null) {
-					for (Object annotationObject : classNode.visibleAnnotations) {
-						AnnotationNode annotation = (AnnotationNode) annotationObject;
-						index(classNode, annotation);
+					if(classNode == null){
+						continue;
 					}
-				}
-				
-				// method annotations
-				for (Object o : classNode.methods) {
-					MethodNode methodNode = (MethodNode) o;
-					if (methodNode.invisibleAnnotations != null) {
-						for (Object annotationObject : methodNode.invisibleAnnotations) {
+					
+					// class annotation
+					if (classNode.invisibleAnnotations != null) {
+						for (Object annotationObject : classNode.invisibleAnnotations) {
 							AnnotationNode annotation = (AnnotationNode) annotationObject;
-							index(classNode, methodNode, annotation);
+							index(library, classNode, annotation);
 						}
 					}
-		    	}
-				for (Object o : classNode.methods) {
-					MethodNode methodNode = (MethodNode) o;
-					if (methodNode.visibleAnnotations != null) {
-						for (Object annotationObject : methodNode.visibleAnnotations) {
+					if (classNode.visibleAnnotations != null) {
+						for (Object annotationObject : classNode.visibleAnnotations) {
 							AnnotationNode annotation = (AnnotationNode) annotationObject;
-							index(classNode, methodNode, annotation);
+							index(library, classNode, annotation);
 						}
 					}
-		    	}
-				
-				// field annotations
-				for (Object o : classNode.fields) {
-					FieldNode fieldNode = (FieldNode) o;
-					if (fieldNode.invisibleAnnotations != null) {
-						for (Object annotationObject : fieldNode.invisibleAnnotations) {
-							AnnotationNode annotation = (AnnotationNode) annotationObject;
-							index(classNode, fieldNode, annotation);
+					if (classNode.invisibleTypeAnnotations != null) {
+						for (Object annotationObject : classNode.invisibleTypeAnnotations) {
+							TypeAnnotationNode annotation = (TypeAnnotationNode) annotationObject;
+							index(library, classNode, annotation);
 						}
 					}
-		    	}
-				for (Object o : classNode.fields) {
-					FieldNode fieldNode = (FieldNode) o;
-					if (fieldNode.visibleAnnotations != null) {
-						for (Object annotationObject : fieldNode.visibleAnnotations) {
-							AnnotationNode annotation = (AnnotationNode) annotationObject;
-							index(classNode, fieldNode, annotation);
+					if (classNode.visibleTypeAnnotations != null) {
+						for (Object annotationObject : classNode.visibleTypeAnnotations) {
+							TypeAnnotationNode annotation = (TypeAnnotationNode) annotationObject;
+							index(library, classNode, annotation);
 						}
 					}
-		    	}
+					
+					// method annotations
+					for (Object o : classNode.methods) {
+						MethodNode methodNode = (MethodNode) o;
+						if (methodNode.invisibleAnnotations != null) {
+							for (Object annotationObject : methodNode.invisibleAnnotations) {
+								AnnotationNode annotation = (AnnotationNode) annotationObject;
+								index(library, classNode, methodNode, annotation);
+							}
+						}
+			    	}
+					for (Object o : classNode.methods) {
+						MethodNode methodNode = (MethodNode) o;
+						if (methodNode.visibleAnnotations != null) {
+							for (Object annotationObject : methodNode.visibleAnnotations) {
+								AnnotationNode annotation = (AnnotationNode) annotationObject;
+								index(library, classNode, methodNode, annotation);
+							}
+						}
+			    	}
+					
+					// field annotations
+					for (Object o : classNode.fields) {
+						FieldNode fieldNode = (FieldNode) o;
+						if (fieldNode.invisibleAnnotations != null) {
+							for (Object annotationObject : fieldNode.invisibleAnnotations) {
+								AnnotationNode annotation = (AnnotationNode) annotationObject;
+								index(library, classNode, fieldNode, annotation);
+							}
+						}
+			    	}
+					for (Object o : classNode.fields) {
+						FieldNode fieldNode = (FieldNode) o;
+						if (fieldNode.visibleAnnotations != null) {
+							for (Object annotationObject : fieldNode.visibleAnnotations) {
+								AnnotationNode annotation = (AnnotationNode) annotationObject;
+								index(library, classNode, fieldNode, annotation);
+							}
+						}
+			    	}
+				}
 			}
 		}
 	}
 	
-	private static void index(ClassNode classNode, AnnotationNode annotation){
-		String qualifiedClassName = classNode.name.replace("/", ".");
+	private static void index(Node library, ClassNode clazz, AnnotationNode annotation){
+		String qualifiedClassName = clazz.name.replace("/", ".");
 		int index = qualifiedClassName.lastIndexOf(".");
-		String pkgName = qualifiedClassName.substring(0, index);
-		String className = qualifiedClassName.substring(index+1, qualifiedClassName.length());
-		for(Node pkg : Common.universe().nodes(XCSG.Package).selectNode(XCSG.name, pkgName).eval().nodes()){
-			for(Node type : Common.toQ(pkg).contained().nodes(XCSG.Classifier).selectNode(XCSG.name, className).eval().nodes()){
-				
+		String className = qualifiedClassName;
+		String pkgName = ""; // default package
+		if(index != -1){
+			pkgName = qualifiedClassName.substring(0, index);
+			className = qualifiedClassName.substring(index+1, qualifiedClassName.length());
+		}
+		for(Node packageNode : Common.toQ(library).contained().nodes(XCSG.Package).selectNode(XCSG.name, pkgName).eval().nodes()){
+			for(Node classNode : Common.toQ(packageNode).contained().nodes(XCSG.Classifier).selectNode(XCSG.name, className).eval().nodes()){
 				// TODO: improve parsing of class descriptors
 				String annotationDescription = annotation.desc;
 				if(annotationDescription.startsWith("L")){
@@ -156,8 +199,13 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 			
 				String qualifiedAnnotationClassName = annotationDescription.replace("/", ".");
 				index = qualifiedAnnotationClassName.lastIndexOf(".");
-				String annotationPkgName = qualifiedAnnotationClassName.substring(0, index);
-				String annotationClassName = qualifiedAnnotationClassName.substring(index+1, qualifiedAnnotationClassName.length());
+				String annotationClassName = qualifiedClassName;
+				String annotationPkgName = ""; // default package
+				if(index != -1){
+					annotationPkgName = qualifiedAnnotationClassName.substring(0, index);
+					annotationClassName = qualifiedAnnotationClassName.substring(index+1, qualifiedAnnotationClassName.length());
+				}
+				
 				Q annotationPackage = Common.universe().nodes(XCSG.Package).selectNode(XCSG.name, annotationPkgName);
 				Node annotationNode = annotationPackage.contained().nodes(XCSG.Java.Annotation).selectNode(XCSG.name, annotationClassName).eval().nodes().one();
 				
@@ -167,20 +215,35 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 					annotationNode.putAttr(XCSG.name, annotationClassName);
 				}
 				
-				Edge annotatedWithEdge = Graph.U.createEdge(annotationNode, type);
+				Edge annotatedWithEdge = Graph.U.createEdge(classNode, annotationNode);
 				annotatedWithEdge.tag(XCSG.Java.AnnotatedWith);
 				
-				// TODO: save values
-//				if(annotation.values != null){
-//					for(Object object : annotation.values){
-////						System.out.println(object.getClass().getName() + ":" + object.toString());
-//					}
-//				}
+				String rawAnnotationText = annotationClassName + "(";
+				String prefix = "";
+				if(annotation.values != null){
+					for(Object object : annotation.values){
+						String value = object.toString();
+						if(value.getClass().equals(String.class)){
+							value = "\"" + value.replace("\'", "\\'")
+										 		.replace("\"", "\\\"")
+										 		.replace("\\", "\\\\")
+										 		.replace("\t", "\\t")
+										 		.replace("\b", "\\b")
+										 		.replace("\r", "\\r")
+										 		.replace("\f", "\\f")
+										 		.replace("\n", "\\n") + "\"";
+						}
+						rawAnnotationText += (prefix + value);
+						prefix = ",";
+					}
+				}
+				rawAnnotationText += ")";
+				classNode.putAttr(JavaStopGap.ANNOTATION_RAW_TEXT, rawAnnotationText);
 			}
 		}
 	}
 	
-	private static void index(ClassNode classNode, MethodNode methodNode, AnnotationNode annotation){
+	private static void index(Node library, ClassNode classNode, MethodNode methodNode, AnnotationNode annotation){
 //		System.out.println(classNode.name + ":" + methodNode.name);
 		if(annotation.values != null){
 			for(Object object : annotation.values){
@@ -189,7 +252,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 		}
 	}
 	
-	private static void index(ClassNode classNode, FieldNode fieldNode, AnnotationNode annotation){
+	private static void index(Node library, ClassNode classNode, FieldNode fieldNode, AnnotationNode annotation){
 //		System.out.println(classNode.name + ":" + fieldNode.name);
 		if(annotation.values != null){
 			for(Object object : annotation.values){
