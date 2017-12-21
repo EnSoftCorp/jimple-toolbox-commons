@@ -2,11 +2,11 @@ package com.ensoftcorp.open.jimple.commons.annotations;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.jar.JarException;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -17,7 +17,6 @@ import com.ensoftcorp.atlas.core.db.graph.Graph;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
-import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
@@ -29,6 +28,7 @@ import com.ensoftcorp.open.java.commons.bytecode.JarInspector;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties.Jar;
 import com.ensoftcorp.open.java.commons.wishful.JavaStopGap;
+import com.ensoftcorp.open.jimple.commons.log.Log;
 import com.ensoftcorp.open.jimple.commons.preferences.JimpleCommonsPreferences;
 
 public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
@@ -104,9 +104,14 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 					byte[] bytes = inspector.extractEntry(entry);
 					ClassNode classNode = null;
 					try {
-						classNode = BytecodeUtils.getClassNode(bytes);
+						// a faster alternative to BytecodeUtils.getClassNode(bytes);
+						// by skipping the code, we just want class and features signatures
+						ClassReader classReader = new ClassReader(bytes);
+						classNode = new ClassNode();
+						classReader.accept(classNode, ClassReader.EXPAND_FRAMES);
 					} catch (Exception e){
-						Log.warning("Error reading class file: " + entry);
+						classNode = null;
+						Log.warning("Unable to read class file: " + entry, e);
 					}
 					if(classNode == null){
 						continue;
@@ -259,14 +264,19 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 		}
 		for(Node packageNode : Common.toQ(library).contained().nodes(XCSG.Package).selectNode(XCSG.name, pkgName).eval().nodes()){
 			for(Node classNode : Common.toQ(packageNode).contained().nodes(XCSG.Classifier).selectNode(XCSG.name, className).eval().nodes()){
-				AtlasSet<Node> methodNodes = new AtlasHashSet<Node>(Common.toQ(classNode).contained().nodes(XCSG.Method).selectNode(XCSG.name, method.name).eval().nodes());
+				String methodName = method.name;
+				if(methodName.equals("<init>")){
+					// this method is the constructor
+					methodName = className;
+				}
+				AtlasSet<Node> methodNodes = new AtlasHashSet<Node>(Common.toQ(classNode).contained().nodes(XCSG.Method).selectNode(XCSG.name, methodName).eval().nodes());
 				Node methodNode = null;
 				if(methodNodes.size() == 1){
 					methodNode = methodNodes.one();
 				} else {
 					Q paramEdges = Common.universe().edgesTaggedWithAny(XCSG.HasParameter);
-					if(method.desc.equals("()V")){
-						// void method
+					if(method.desc.contains("()")){
+						// no parameters
 						// save only the methods without any parameters
 						methodNodes = Common.toQ(methodNodes).difference(paramEdges.forward(Common.toQ(methodNodes)).retainEdges().retainNodes()).eval().nodes();
 						if(methodNodes.size() == 1){
@@ -281,7 +291,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 							for(int i=0; i<parameters.length; i++){
 								String parameter = parameters[i];
 								if(!parameter.equals("")){
-									Node parameterType = getParameterTypeNode(parameter);
+									Node parameterType = BytecodeUtils.getTypeNode(parameter);
 									methodNodes = Common.toQ(methodNodes).intersection(typeOfEdges.predecessors(Common.toQ(parameterType)).selectNode(XCSG.parameterIndex, i).parent()).eval().nodes();
 									if(methodNodes.size() == 1){
 										// found our match
@@ -291,7 +301,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 								}
 							}
 						} catch (Exception e){
-							Log.warning("Error parsing method parameter descriptors: " + method.desc);
+							Log.warning("Error parsing method parameter descriptors: " +  qualifiedClassName + "." + method.name + method.desc);
 							return;
 						}
 					}
@@ -306,7 +316,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 					String rawAnnotationText = getRawAnnotation(annotation, annotationNode);
 					methodNode.putAttr(JavaStopGap.ANNOTATION_RAW_TEXT, rawAnnotationText);
 				} else {
-					Log.warning("Could not find matching method for " + method.name + method.desc);
+					Log.warning("Could not find matching method for " + qualifiedClassName + "." + method.name + method.desc);
 					return;
 				}
 			}
@@ -336,101 +346,6 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 			}
 		}
 	}
-	
-	private static Node getParameterTypeNode(String descriptor){
-		int arrayDimension = 0;
-		while(descriptor.startsWith("[")){
-			descriptor = descriptor.substring(1);
-			arrayDimension++;
-		}
-		
-		Node typeNode = null;
-		if(descriptor.equals("I") || descriptor.equals("int")){
-			typeNode = Common.universe().nodes(XCSG.Primitive).selectNode(XCSG.name, "int").eval().nodes().one();
-		} else if(descriptor.equals("J") || descriptor.equals("long")){
-			typeNode = Common.universe().nodes(XCSG.Primitive).selectNode(XCSG.name, "long").eval().nodes().one();
-		} else if(descriptor.equals("S") || descriptor.equals("short")){
-			typeNode = Common.universe().nodes(XCSG.Primitive).selectNode(XCSG.name, "short").eval().nodes().one();
-		} else if(descriptor.equals("F") || descriptor.equals("float")){
-			typeNode = Common.universe().nodes(XCSG.Primitive).selectNode(XCSG.name, "float").eval().nodes().one();
-		} else if(descriptor.equals("D") || descriptor.equals("double")){
-			typeNode = Common.universe().nodes(XCSG.Primitive).selectNode(XCSG.name, "double").eval().nodes().one();
-		} else if(descriptor.equals("C") || descriptor.equals("char")){
-			typeNode = Common.universe().nodes(XCSG.Primitive).selectNode(XCSG.name, "char").eval().nodes().one();
-		} else if(descriptor.equals("B") || descriptor.equals("byte")){
-			typeNode = Common.universe().nodes(XCSG.Primitive).selectNode(XCSG.name, "byte").eval().nodes().one();
-		} else if(descriptor.equals("Z") || descriptor.equals("boolean")){
-			typeNode = Common.universe().nodes(XCSG.Primitive).selectNode(XCSG.name, "boolean").eval().nodes().one();
-		} else if(descriptor.startsWith("L")){
-			// any non-primitive Object
-			descriptor = descriptor.substring(1);
-			descriptor = descriptor.replace("/", ".").trim();
-			String qualifiedClassName = descriptor;
-			int index = qualifiedClassName.lastIndexOf(".");
-			String className = qualifiedClassName;
-			String pkgName = ""; // default package
-			if(index != -1){
-				pkgName = qualifiedClassName.substring(0, index);
-				className = qualifiedClassName.substring(index+1, qualifiedClassName.length());
-			}
-			Q pkgs = Common.universe().nodes(XCSG.Package).selectNode(XCSG.name, pkgName);
-			AtlasSet<Node> classNodes = pkgs.contained().nodes(XCSG.Classifier).selectNode(XCSG.name, className).eval().nodes();
-			if(classNodes.isEmpty()){
-				Log.warning("Could not find class: " + qualifiedClassName);
-				return null;
-			} else if(classNodes.size() > 1){
-				Log.warning("Found multiple class matches for " + qualifiedClassName);
-				return null;
-			} else {
-				typeNode = classNodes.one();
-			}
-		}
-		
-		if(arrayDimension > 0){
-			Q arrayElementTypeEdges = Common.universe().edges(XCSG.ArrayElementType);
-			Q arrayTypes = arrayElementTypeEdges.predecessors(Common.toQ(typeNode));
-			AtlasSet<Node> arrayDimensionTypes = arrayTypes.selectNode(XCSG.Java.arrayTypeDimension, arrayDimension).eval().nodes();
-			if(arrayDimensionTypes.size() != 1){
-				Log.warning("Could not find a matching array dimension for type [" + typeNode.address().toAddressString() + "]");
-				return null;
-			} else {
-				return arrayDimensionTypes.one();
-			}
-		}
-		
-		return typeNode;
-	}
-	
-	private static String parseJVMDescriptor(String descriptor){
-		String suffix = "";
-		while(descriptor.startsWith("[")){
-			descriptor = descriptor.substring(1);
-			suffix+="[]";
-		}
-		if(descriptor.equals("I") || descriptor.equals("int")){
-			descriptor = "int";
-		} else if(descriptor.equals("J") || descriptor.equals("long")){
-			descriptor = "long";
-		} else if(descriptor.equals("S") || descriptor.equals("short")){
-			descriptor = "short";
-		} else if(descriptor.equals("F") || descriptor.equals("float")){
-			descriptor = "float";
-		} else if(descriptor.equals("D") || descriptor.equals("double")){
-			descriptor = "double";
-		} else if(descriptor.equals("C") || descriptor.equals("char")){
-			descriptor = "char";
-		} else if(descriptor.equals("B") || descriptor.equals("byte")){
-			descriptor = "byte";
-		} else if(descriptor.equals("Z") || descriptor.equals("boolean")){
-			descriptor = "boolean";
-		} else if(descriptor.startsWith("L")){
-			// any non-primitive Object
-			descriptor = descriptor.substring(1);
-			descriptor = descriptor.replace("/", ".").trim();
-		}
-		descriptor += suffix;
-		return descriptor.replace(";", "");
-	}
 
 	private static String getRawAnnotation(AnnotationNode annotation, Node annotationNode) {
 		String rawAnnotationText = annotationNode.getAttr(XCSG.name).toString() + "(";
@@ -459,7 +374,6 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 	}
 	
 	private static Node getOrCreateAnnotationNode(Node library, AnnotationNode annotation){
-		// TODO: improve parsing of class descriptors
 		String annotationDescription = annotation.desc;
 		if(annotationDescription.startsWith("L")){
 			annotationDescription = annotationDescription.substring(1);
@@ -477,13 +391,27 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 			annotationClassName = qualifiedAnnotationClassName.substring(index+1, qualifiedAnnotationClassName.length());
 		}
 		
-		Q annotationPackage = Common.universe().nodes(XCSG.Package).selectNode(XCSG.name, annotationPkgName);
-		Node annotationNode = annotationPackage.contained().nodes(XCSG.Java.Annotation).selectNode(XCSG.name, annotationClassName).eval().nodes().one();
+		Node pkgNode = Common.toQ(library).contained().nodes(XCSG.Package).selectNode(XCSG.name, annotationPkgName).eval().nodes().one();
+		if(pkgNode == null){
+			pkgNode = Graph.U.createNode();
+			pkgNode.tag(XCSG.Package);
+			pkgNode.putAttr(XCSG.name, annotationPkgName);
+			
+			Edge containsEdge = Graph.U.createEdge(library, pkgNode);
+			containsEdge.tag(XCSG.Contains);
+		}
 		
+		Node annotationNode = Common.toQ(pkgNode).contained().nodes(XCSG.Java.Annotation).selectNode(XCSG.name, annotationClassName).eval().nodes().one();
 		if(annotationNode == null){
 			annotationNode = Graph.U.createNode();
 			annotationNode.tag(XCSG.Java.Annotation);
 			annotationNode.putAttr(XCSG.name, annotationClassName);
+			
+			Edge containsEdge = Graph.U.createEdge(pkgNode, annotationNode);
+			containsEdge.tag(XCSG.Contains);
+			
+			Edge libraryContainsEdge = Graph.U.createEdge(library, pkgNode);
+			libraryContainsEdge.tag(XCSG.Contains);
 		}
 		
 		return annotationNode;

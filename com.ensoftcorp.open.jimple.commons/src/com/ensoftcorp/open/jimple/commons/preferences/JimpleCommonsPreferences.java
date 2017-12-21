@@ -37,7 +37,7 @@ public class JimpleCommonsPreferences extends AbstractPreferenceInitializer {
 	 * Enable/disable indexing library jar annotations
 	 */
 	public static final String INDEX_LIBRARY_JAR_ANNOTATIONS = "INDEX_LIBRARY_JAR_ANNOTATIONS";
-	public static final Boolean INDEX_LIBRARY_JAR_ANNOTATIONS_DEFAULT = true;
+	public static final Boolean INDEX_LIBRARY_JAR_ANNOTATIONS_DEFAULT = false;
 	private static boolean indexLibraryJarAnnotationsValue = INDEX_LIBRARY_JAR_ANNOTATIONS_DEFAULT;
 	
 	public static boolean isLibraryJarAnnotationIndexerEnabled() {
