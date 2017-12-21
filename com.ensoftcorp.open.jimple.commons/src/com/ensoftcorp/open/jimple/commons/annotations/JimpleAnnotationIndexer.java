@@ -188,37 +188,12 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 		}
 		for(Node packageNode : Common.toQ(library).contained().nodes(XCSG.Package).selectNode(XCSG.name, pkgName).eval().nodes()){
 			for(Node classNode : Common.toQ(packageNode).contained().nodes(XCSG.Classifier).selectNode(XCSG.name, className).eval().nodes()){
-				// TODO: improve parsing of class descriptors
-				String annotationDescription = annotation.desc;
-				if(annotationDescription.startsWith("L")){
-					annotationDescription = annotationDescription.substring(1);
-				}
-				if(annotationDescription.endsWith(";")){
-					annotationDescription = annotationDescription.substring(0,annotationDescription.length()-1);
-				}
-			
-				String qualifiedAnnotationClassName = annotationDescription.replace("/", ".");
-				index = qualifiedAnnotationClassName.lastIndexOf(".");
-				String annotationClassName = qualifiedClassName;
-				String annotationPkgName = ""; // default package
-				if(index != -1){
-					annotationPkgName = qualifiedAnnotationClassName.substring(0, index);
-					annotationClassName = qualifiedAnnotationClassName.substring(index+1, qualifiedAnnotationClassName.length());
-				}
-				
-				Q annotationPackage = Common.universe().nodes(XCSG.Package).selectNode(XCSG.name, annotationPkgName);
-				Node annotationNode = annotationPackage.contained().nodes(XCSG.Java.Annotation).selectNode(XCSG.name, annotationClassName).eval().nodes().one();
-				
-				if(annotationNode == null){
-					annotationNode = Graph.U.createNode();
-					annotationNode.tag(XCSG.Java.Annotation);
-					annotationNode.putAttr(XCSG.name, annotationClassName);
-				}
+				Node annotationNode = getOrCreateAnnotationNode(library, annotation);
 				
 				Edge annotatedWithEdge = Graph.U.createEdge(classNode, annotationNode);
 				annotatedWithEdge.tag(XCSG.Java.AnnotatedWith);
 				
-				String rawAnnotationText = annotationClassName + "(";
+				String rawAnnotationText = annotationNode.getAttr(XCSG.name).toString() + "(";
 				String prefix = "";
 				if(annotation.values != null){
 					for(Object object : annotation.values){
@@ -243,7 +218,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 		}
 	}
 	
-	private static void index(Node library, ClassNode classNode, MethodNode methodNode, AnnotationNode annotation){
+	private static void index(Node library, ClassNode clazz, MethodNode methodNode, AnnotationNode annotation){
 //		System.out.println(classNode.name + ":" + methodNode.name);
 		if(annotation.values != null){
 			for(Object object : annotation.values){
@@ -252,13 +227,78 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 		}
 	}
 	
-	private static void index(Node library, ClassNode classNode, FieldNode fieldNode, AnnotationNode annotation){
-//		System.out.println(classNode.name + ":" + fieldNode.name);
-		if(annotation.values != null){
-			for(Object object : annotation.values){
-//				System.out.println(object.getClass().getName() + ":" + object.toString());
+	private static void index(Node library, ClassNode clazz, FieldNode field, AnnotationNode annotation){
+		String qualifiedClassName = clazz.name.replace("/", ".");
+		int index = qualifiedClassName.lastIndexOf(".");
+		String className = qualifiedClassName;
+		String pkgName = ""; // default package
+		if(index != -1){
+			pkgName = qualifiedClassName.substring(0, index);
+			className = qualifiedClassName.substring(index+1, qualifiedClassName.length());
+		}
+		for(Node packageNode : Common.toQ(library).contained().nodes(XCSG.Package).selectNode(XCSG.name, pkgName).eval().nodes()){
+			for(Node classNode : Common.toQ(packageNode).contained().nodes(XCSG.Classifier).selectNode(XCSG.name, className).eval().nodes()){
+				for(Node fieldNode : Common.toQ(classNode).contained().nodes(XCSG.Field).selectNode(XCSG.name, field.name).eval().nodes()){
+					Node annotationNode = getOrCreateAnnotationNode(library, annotation);
+					
+					Edge annotatedWithEdge = Graph.U.createEdge(fieldNode, annotationNode);
+					annotatedWithEdge.tag(XCSG.Java.AnnotatedWith);
+					
+					String rawAnnotationText = annotationNode.getAttr(XCSG.name).toString() + "(";
+					String prefix = "";
+					if(annotation.values != null){
+						for(Object object : annotation.values){
+							String value = object.toString();
+							if(value.getClass().equals(String.class)){
+								value = "\"" + value.replace("\'", "\\'")
+											 		.replace("\"", "\\\"")
+											 		.replace("\\", "\\\\")
+											 		.replace("\t", "\\t")
+											 		.replace("\b", "\\b")
+											 		.replace("\r", "\\r")
+											 		.replace("\f", "\\f")
+											 		.replace("\n", "\\n") + "\"";
+							}
+							rawAnnotationText += (prefix + value);
+							prefix = ",";
+						}
+					}
+					rawAnnotationText += ")";
+					classNode.putAttr(JavaStopGap.ANNOTATION_RAW_TEXT, rawAnnotationText);
+				}
 			}
 		}
+	}
+	
+	private static Node getOrCreateAnnotationNode(Node library, AnnotationNode annotation){
+		// TODO: improve parsing of class descriptors
+		String annotationDescription = annotation.desc;
+		if(annotationDescription.startsWith("L")){
+			annotationDescription = annotationDescription.substring(1);
+		}
+		if(annotationDescription.endsWith(";")){
+			annotationDescription = annotationDescription.substring(0,annotationDescription.length()-1);
+		}
+	
+		String qualifiedAnnotationClassName = annotationDescription.replace("/", ".");
+		int index = qualifiedAnnotationClassName.lastIndexOf(".");
+		String annotationClassName = qualifiedAnnotationClassName;
+		String annotationPkgName = ""; // default package
+		if(index != -1){
+			annotationPkgName = qualifiedAnnotationClassName.substring(0, index);
+			annotationClassName = qualifiedAnnotationClassName.substring(index+1, qualifiedAnnotationClassName.length());
+		}
+		
+		Q annotationPackage = Common.universe().nodes(XCSG.Package).selectNode(XCSG.name, annotationPkgName);
+		Node annotationNode = annotationPackage.contained().nodes(XCSG.Java.Annotation).selectNode(XCSG.name, annotationClassName).eval().nodes().one();
+		
+		if(annotationNode == null){
+			annotationNode = Graph.U.createNode();
+			annotationNode.tag(XCSG.Java.Annotation);
+			annotationNode.putAttr(XCSG.name, annotationClassName);
+		}
+		
+		return annotationNode;
 	}
 
 }
