@@ -52,6 +52,7 @@ public class JarToJimpleHandler extends AbstractHandler {
 						outputDirectory.mkdirs();
 						boolean allowPhantomReferences = true;
 						boolean useOriginalNames = true;
+						
 						Decompilation.decompile(library, outputDirectory, allowPhantomReferences, useOriginalNames);
 						try {
 							project.refreshLocal(IResource.DEPTH_INFINITE, new NullProgressMonitor());
