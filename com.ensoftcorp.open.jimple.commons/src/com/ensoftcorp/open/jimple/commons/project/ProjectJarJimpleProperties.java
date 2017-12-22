@@ -41,6 +41,30 @@ public class ProjectJarJimpleProperties {
 		return useOriginalNames;
 	}
 	
+	public static boolean jarHasJimplePathSet(Jar jar){
+		return jar.getJarAttributes().containsKey(JAR_JIMPLE_PROPERTIES_JIMPLE_DIRECTORY_PATH);
+	}
+	
+	public static String getJarJimplePath(Jar jar){
+		return jar.getJarAttributes().get(JAR_JIMPLE_PROPERTIES_JIMPLE_DIRECTORY_PATH);
+	}
+	
+	public static boolean jarHasJimplePhantomReferencesConfigurationSet(Jar jar){
+		return jar.getJarAttributes().containsKey(JAR_JIMPLE_PROPERTIES_PHANTOM_REFERENCES);
+	}
+	
+	public static boolean getJarJimplePhantomReferencesConfiguration(Jar jar){
+		return Boolean.parseBoolean(jar.getJarAttributes().get(JAR_JIMPLE_PROPERTIES_PHANTOM_REFERENCES));
+	}
+	
+	public static boolean jarHasJimpleUseOriginalNamesConfigurationSet(Jar jar){
+		return jar.getJarAttributes().containsKey(JAR_JIMPLE_PROPERTIES_USE_ORIGINAL_NAMES);
+	}
+	
+	public static boolean getJarJimpleUseOriginalNamesConfiguration(Jar jar){
+		return Boolean.parseBoolean(jar.getJarAttributes().get(JAR_JIMPLE_PROPERTIES_USE_ORIGINAL_NAMES));
+	}
+	
 	public static void setJimpleProperties(ProjectJarJimpleProperties jimpleProperties) throws Exception {
 		Map<String,String> attributes = new HashMap<String,String>();
 		attributes.put(JAR_JIMPLE_PROPERTIES_JIMPLE_DIRECTORY_PATH, jimpleProperties.getJimpleDirectory().getProjectRelativePath().toPortableString());
