@@ -447,11 +447,12 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 					File jimpleDirectory = Compilation.getJimpleDirectory(new File(project.getLocation().toOSString()));
 					File outputDirectory = projectClassesDirectory;
 					boolean allowPhantomReferences = true;
+					boolean useOriginalNames = true;
 					boolean outputBytecode = true;
 					boolean jarify = false;
 					String previousText = statusLabel.getText();
 					statusLabel.setText("Compiling Jimple in " + project.getName() + "...");
-					Compilation.compile(project, jimpleDirectory, outputDirectory, allowPhantomReferences, new ArrayList<File>(), outputBytecode, jarify);
+					Compilation.compile(project, jimpleDirectory, outputDirectory, allowPhantomReferences, useOriginalNames, new ArrayList<File>(), outputBytecode, jarify);
 					statusLabel.setText(previousText);
 				}
 				String qualifiedClass = CommonQueries.getQualifiedTypeName(classNode);

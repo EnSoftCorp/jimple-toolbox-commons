@@ -49,8 +49,9 @@ public class Compilation {
 	public static void compile(IProject project, List<File> libraries, File outputJar) throws IOException, CoreException, SootConversionException {
 		File jimpleDirectory = null; // assume jimple is at the project root
 		boolean allowPhantomReferences = false; // compile in strict mode
+		boolean useOriginalNames = true; // preserve original names
 		boolean outputBytecode = true; // compile Jimple to class files
-		Compilation.compile(project, jimpleDirectory, outputJar, allowPhantomReferences, libraries, outputBytecode);
+		Compilation.compile(project, jimpleDirectory, outputJar, allowPhantomReferences, useOriginalNames, libraries, outputBytecode);
 	}
 	
 	/**
@@ -66,8 +67,8 @@ public class Compilation {
 	 * @throws CoreException
 	 * @throws SootConversionException 
 	 */
-	public static void compile(IProject project, File jimpleDirectory, File outputJar, boolean allowPhantomReferences, List<File> libraries, boolean outputBytecode) throws IOException, CoreException, SootConversionException {
-		compile(project, jimpleDirectory, outputJar, allowPhantomReferences, libraries, outputBytecode, true);
+	public static void compile(IProject project, File jimpleDirectory, File outputJar, boolean allowPhantomReferences, boolean useOriginalNames, List<File> libraries, boolean outputBytecode) throws IOException, CoreException, SootConversionException {
+		compile(project, jimpleDirectory, outputJar, allowPhantomReferences, useOriginalNames, libraries, outputBytecode, true);
 	}
 	
 	/**
@@ -84,7 +85,7 @@ public class Compilation {
 	 * @throws CoreException
 	 * @throws SootConversionException 
 	 */
-	public static void compile(IProject project, File jimpleDirectory, File output, boolean allowPhantomReferences, List<File> libraries, boolean outputBytecode, boolean jarify) throws IOException, CoreException, SootConversionException {	
+	public static void compile(IProject project, File jimpleDirectory, File output, boolean allowPhantomReferences, boolean useOriginalNames, List<File> libraries, boolean outputBytecode, boolean jarify) throws IOException, CoreException, SootConversionException {	
 		// make sure there is a directory to write the output to
 		File outputDirectory = output.getParentFile();
 		if(!outputDirectory.exists()){
@@ -146,8 +147,10 @@ public class Compilation {
 		argList.add("-output-format"); argList.add(outputBytecode ? "class" : "jimple");
 		
 		// try to preserve as much of the original implementation as possible
-		argList.add("--p");argList.add("jb");argList.add("use-original-names:true");
-        argList.add("--p");argList.add("jb");argList.add("stabilize-local-names:true");
+		if(useOriginalNames){
+			argList.add("-p"); argList.add("jb"); argList.add("use-original-names:true");
+		}
+		argList.add("--p");argList.add("jb");argList.add("stabilize-local-names:true");
         
         // this may be used to forcible generate potentially invalid bytecode
 //      argList.add("--p");argList.add("jb.tr");argList.add("ignore-wrong-staticness:true");

@@ -3,9 +3,15 @@ package com.ensoftcorp.open.jimple.commons.soot;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.launching.IVMInstall;
@@ -13,7 +19,6 @@ import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jdt.launching.LibraryLocation;
 
 import com.ensoftcorp.abp.common.soot.ConfigManager;
-import com.ensoftcorp.abp.common.util.JimpleUtil;
 import com.ensoftcorp.abp.common.util.JimpleUtil.JimpleSource;
 import com.ensoftcorp.open.jimple.commons.log.Log;
 
@@ -108,7 +113,7 @@ public class Decompilation {
 			
 			// use original names
 			if(useOriginalNames){
-				argList.add("-p"); argList.add("jb"); argList.add("use-original-names");
+				argList.add("-p"); argList.add("jb"); argList.add("use-original-names:true");
 			}
 			argList.add("--p");argList.add("jb");argList.add("stabilize-local-names:true");
 			
@@ -116,23 +121,63 @@ public class Decompilation {
 			
 			try {
 				soot.Main.main(args);
-				JimpleUtil.writeHeaderFile(JimpleSource.JAR, jar.getAbsolutePath(), outputDirectory.getAbsolutePath());
+				
+				// if this jar was contained in a project and is being written into a project, then write a jimplesource.xml file as well
+				Map<File,IProject> projectDirectories = new HashMap<File,IProject>();
+				for(IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()){
+					if(project.isAccessible() && project.isOpen()){
+						projectDirectories.put(new File(project.getLocation().toOSString()), project);
+					}
+				}
+				IFile jarFile = null;
+				File jarParent = jar.getParentFile();
+				String jarRelativePath = jar.getName();
+				while(jarParent != null){
+					if(projectDirectories.keySet().contains(jarParent)){
+						IProject project = projectDirectories.get(jarParent);
+						jarFile = project.getFile(jarRelativePath);
+						break;
+					} else {
+						jarRelativePath = jarParent.getName() + "/" + jarRelativePath;
+						jarParent = jarParent.getParentFile();
+					}
+				}
+				IFolder outputDirectoryFolder = null;
+				File outputDirectoryParent = outputDirectory.getParentFile();
+				String outputDirectoryRelativePath = outputDirectory.getName();
+				while(outputDirectoryParent != null){
+					if(projectDirectories.keySet().contains(outputDirectoryParent)){
+						IProject project = projectDirectories.get(outputDirectoryParent);
+						outputDirectoryFolder = project.getFolder(outputDirectoryRelativePath);
+						break;
+					} else {
+						outputDirectoryRelativePath = outputDirectoryParent.getName() + "/" + outputDirectoryRelativePath;
+						outputDirectoryParent = outputDirectoryParent.getParentFile();
+					}
+				}
+				if(jarFile != null && outputDirectoryFolder != null){
+					try {
+						JimpleUtil.writeHeaderFile(JimpleSource.JAR, jarFile, outputDirectoryFolder);
+					} catch (Exception e) {
+						Log.warning("Could not write jimplesource.xml header file.", e);
+					}
+				}
 				
 				// warn about any phantom references
 				Chain<SootClass> phantomClasses = soot.Scene.v().getPhantomClasses();
-                if (!phantomClasses.isEmpty()) {
-                        TreeSet<String> missingClasses = new TreeSet<String>();
-                        for (SootClass sootClass : phantomClasses) {
-                                missingClasses.add(sootClass.toString());
-                        }
-                        StringBuilder message = new StringBuilder();
-                        message.append("Some classes were referenced, but could not be found.\n\n");
-                        for (String sootClass : missingClasses) {
-                                message.append(sootClass);
-                                message.append("\n");
-                        }
-                        Log.warning(message.toString());
-                }
+				if (!phantomClasses.isEmpty()) {
+					TreeSet<String> missingClasses = new TreeSet<String>();
+					for (SootClass sootClass : phantomClasses) {
+						missingClasses.add(sootClass.toString());
+					}
+					StringBuilder message = new StringBuilder();
+					message.append("Some classes were referenced, but could not be found.\n\n");
+					for (String sootClass : missingClasses) {
+						message.append(sootClass);
+						message.append("\n");
+					}
+					Log.warning(message.toString());
+				}
 			} catch (RuntimeException e) {
 				throw new SootConversionException(e);
 			}
