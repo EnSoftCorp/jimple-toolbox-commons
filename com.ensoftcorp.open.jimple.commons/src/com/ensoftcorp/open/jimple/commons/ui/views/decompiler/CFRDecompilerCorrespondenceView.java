@@ -65,7 +65,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	private Label statusLabel;
 	private RSyntaxTextArea textArea;
 	
-	private boolean listening = true;
+	private boolean processing = true;
 	
 	public CFRDecompilerCorrespondenceView() {
 		setPartName("CFR Decompiler Correspondence");
@@ -157,8 +157,8 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		};
 		increaseFontSizeAction.setText("Increase Font");
 		increaseFontSizeAction.setToolTipText("Increase Font");
-		ImageDescriptor enabledIncreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/add.gif"));
-		ImageDescriptor disabledIncreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/add.gif"));
+		ImageDescriptor enabledIncreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/increase.gif"));
+		ImageDescriptor disabledIncreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/increase.gif"));
 		increaseFontSizeAction.setImageDescriptor(enabledIncreaseFontIcon);
 		increaseFontSizeAction.setDisabledImageDescriptor(disabledIncreaseFontIcon);
 		increaseFontSizeAction.setHoverImageDescriptor(enabledIncreaseFontIcon);
@@ -173,14 +173,43 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		};
 		decreaseFontSizeAction.setText("Decrease Font");
 		decreaseFontSizeAction.setToolTipText("Decrease Font");
-		ImageDescriptor enabledDecreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/subtract.gif"));
-		ImageDescriptor disabledDecreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/subtract.gif"));
+		ImageDescriptor enabledDecreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/decrease.gif"));
+		ImageDescriptor disabledDecreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/decrease.gif"));
 		decreaseFontSizeAction.setImageDescriptor(enabledDecreaseFontIcon);
 		decreaseFontSizeAction.setDisabledImageDescriptor(disabledDecreaseFontIcon);
 		decreaseFontSizeAction.setHoverImageDescriptor(enabledDecreaseFontIcon);
 		getViewSite().getActionBars().getToolBarManager().add(decreaseFontSizeAction);
 		
+		// add a toggle selection listener button
+		// icon from http://eclipse-icons.i24.cc
+		ImageDescriptor activeSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/play.gif"));
+		ImageDescriptor pausedSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/pause.gif"));
+		final Action toggleSelectionListenerAction = new Action() {
+			public void run() {
+				toggleSelectionListener();
+				if(isGraphSelectionListenerEnabled()){
+					this.setImageDescriptor(pausedSelectionListenerIcon);
+					this.setDisabledImageDescriptor(pausedSelectionListenerIcon);
+					this.setHoverImageDescriptor(pausedSelectionListenerIcon);
+				} else {
+					this.setImageDescriptor(activeSelectionListenerIcon);
+					this.setDisabledImageDescriptor(activeSelectionListenerIcon);
+					this.setHoverImageDescriptor(activeSelectionListenerIcon);
+				}
+			}
+		};
+		toggleSelectionListenerAction.setText("Toggle Selection Listener");
+		toggleSelectionListenerAction.setToolTipText("Toggle Selection Listener");
+		toggleSelectionListenerAction.setImageDescriptor(pausedSelectionListenerIcon);
+		toggleSelectionListenerAction.setDisabledImageDescriptor(pausedSelectionListenerIcon);
+		toggleSelectionListenerAction.setHoverImageDescriptor(pausedSelectionListenerIcon);
+		getViewSite().getActionBars().getToolBarManager().add(toggleSelectionListenerAction);
+		
 		registerGraphHandlers();
+	}
+	
+	private void toggleSelectionListener() {
+		toggleGraphSelectionProvider();
 	}
 	
 	private void increaseFontSize(){
@@ -230,13 +259,13 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	@Override
 	public void selectionChanged(Graph selection) {
 		synchronized (CFRDecompilerCorrespondenceView.class){
-			if(!listening){
+			if(!processing){
 				// we are processing another selection...
 				return;
 			}
-			listening = false;
+			processing = false;
 			processSelection(selection);
-			listening = true;
+			processing = true;
 		}
 	}
 
