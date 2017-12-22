@@ -69,24 +69,36 @@ public class Decompilation {
 	 * @throws IOException
 	 */
 	public static void decompile(File jar, File outputDirectory, List<IClasspathEntry> classpathEntries, boolean allowPhantomReferences, boolean useOriginalNames) throws SootConversionException, IOException {
+		StringBuilder classpath = new StringBuilder();
+		for(IClasspathEntry entry: classpathEntries){
+			classpath.append(entry.getPath().toFile().getCanonicalPath());
+			classpath.append(File.pathSeparator);
+		}
+		decompile(jar, outputDirectory, classpath.toString(), allowPhantomReferences, useOriginalNames);
+	}
+	
+	/**
+	 * Converts a jar file to jimple
+	 * @param projectDirectory
+	 * @param jar
+	 * @param outputDirectory
+	 * @param classpath
+	 * @throws SootConversionException
+	 * @throws IOException
+	 */
+	public static void decompile(File jar, File outputDirectory, String classpath, boolean allowPhantomReferences, boolean useOriginalNames) throws SootConversionException, IOException {
 		if(!outputDirectory.exists()){
 			outputDirectory.mkdirs();
 		}
 		ConfigManager.getInstance().startTempConfig();
 		try {
 			G.reset();
-		
-			StringBuilder classpath = new StringBuilder();
-			for(IClasspathEntry entry: classpathEntries){
-				classpath.append(entry.getPath().toFile().getCanonicalPath());
-				classpath.append(File.pathSeparator);
-			}
 
 			ArrayList<String> argList = new ArrayList<String>();
 			argList.add("-src-prec"); argList.add("class");
 			argList.add("--xml-attributes");
 			argList.add("-output-format"); argList.add("jimple");
-			argList.add("-cp"); argList.add(classpath.toString());
+			argList.add("-cp"); argList.add(classpath);
 			if(allowPhantomReferences){
 				argList.add("-allow-phantom-refs");
 			}
