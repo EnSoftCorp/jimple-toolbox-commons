@@ -15,6 +15,7 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
+import com.ensoftcorp.open.jimple.commons.handlers.JarToJimpleConfigurationsDialog.JimpleGenerationConfigurations;
 import com.ensoftcorp.open.jimple.commons.log.Log;
 import com.ensoftcorp.open.jimple.commons.soot.Decompilation;
 
@@ -48,15 +49,17 @@ public class JarToJimpleHandler extends AbstractHandler {
 				if(last instanceof org.eclipse.core.internal.resources.File){
 					File library = ((org.eclipse.core.internal.resources.File)last).getLocation().toFile();
 					if(library.getName().endsWith(".jar")){
-						File outputDirectory = new File(library.getParentFile().getAbsolutePath() + File.separator + library.getName().replace(".jar", ""));
-						outputDirectory.mkdirs();
-						boolean allowPhantomReferences = true;
-						boolean useOriginalNames = true;
-						
-						Decompilation.decompile(library, outputDirectory, allowPhantomReferences, useOriginalNames);
-						try {
-							project.refreshLocal(IResource.DEPTH_INFINITE, new NullProgressMonitor());
-						} catch (Exception e){}
+						JarToJimpleConfigurationsDialog dialog = new JarToJimpleConfigurationsDialog(window.getShell());
+						Object result = dialog.open(true, true, true);
+						if(result != null){
+							File outputDirectory = new File(library.getParentFile().getAbsolutePath() + File.separator + library.getName().replace(".jar", ""));
+							outputDirectory.mkdirs();
+							JimpleGenerationConfigurations configuration = (JimpleGenerationConfigurations) result;
+							Decompilation.decompile(library, outputDirectory, configuration.isAllowPhantomReferencesEnabled(), configuration.isUseOriginalNamesEnabled());
+							try {
+								project.refreshLocal(IResource.DEPTH_INFINITE, new NullProgressMonitor());
+							} catch (Exception e){}
+						}
 					} else {
 						throw new IllegalArgumentException();
 					}

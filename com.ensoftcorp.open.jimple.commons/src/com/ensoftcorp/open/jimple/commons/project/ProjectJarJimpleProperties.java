@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.core.resources.IFolder;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.IPath;
 
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties.Jar;
 

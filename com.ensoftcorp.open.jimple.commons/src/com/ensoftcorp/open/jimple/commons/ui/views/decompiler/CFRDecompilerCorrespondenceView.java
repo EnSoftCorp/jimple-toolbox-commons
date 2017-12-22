@@ -14,7 +14,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import javax.swing.ScrollPaneConstants;
@@ -537,23 +536,6 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 				}
 			}
 		}
-	}
-	
-	// helper method for recursively finding jar files in a given directory
-	private static List<File> findJars(File directory){
-		ArrayList<File> jimple = new ArrayList<File>();
-		if(directory.exists()){
-			if (directory.isDirectory()) {
-				for (File f : directory.listFiles()) {
-					jimple.addAll(findJars(f));
-				}
-			}
-			File file = directory;
-			if(file.getName().endsWith(".jar")){
-				jimple.add(file);
-			}
-		}
-		return jimple;
 	}
 	
 	private String decompileClassFromJar(File extractedJar, Node classNode){
