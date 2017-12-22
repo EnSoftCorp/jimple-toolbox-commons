@@ -92,6 +92,7 @@ public class JimpleUtil {
 		transformer.setOutputProperty(OutputKeys.METHOD, "xml");
 		transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
 		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "3");
+		jimpleSourceFile.getParentFile().mkdirs();
 		transformer.transform(new DOMSource(jimpleSource), new StreamResult(new FileOutputStream(jimpleSourceFile)));
 	}
 }
