@@ -28,6 +28,9 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.wb.swt.ResourceManager;
 import org.fife.rsyntaxtextarea.themes.Themes;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -59,12 +62,13 @@ import com.ensoftcorp.open.jimple.commons.soot.SootConversionException;
 
 public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView {
 	
+	private static final String ID = "com.ensoftcorp.open.jimple.commons.ui.views.decompiler";
+	
 	private File tempDirectory = null;
 	private File extractedJarsDirectory = null;
 	private File compiledClassesDirectory = null;
 	private Label statusLabel;
 	private RSyntaxTextArea textArea;
-	
 	private boolean processing = true;
 	
 	public CFRDecompilerCorrespondenceView() {
@@ -149,7 +153,6 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		}
 		
 		// add an increase font size button
-		// icon from http://eclipse-icons.i24.cc
 		final Action increaseFontSizeAction = new Action() {
 			public void run() {
 				increaseFontSize();
@@ -157,15 +160,13 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		};
 		increaseFontSizeAction.setText("Increase Font");
 		increaseFontSizeAction.setToolTipText("Increase Font");
-		ImageDescriptor enabledIncreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/increase.gif"));
-		ImageDescriptor disabledIncreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/increase.gif"));
-		increaseFontSizeAction.setImageDescriptor(enabledIncreaseFontIcon);
-		increaseFontSizeAction.setDisabledImageDescriptor(disabledIncreaseFontIcon);
-		increaseFontSizeAction.setHoverImageDescriptor(enabledIncreaseFontIcon);
+		ImageDescriptor increaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/increase.gif"));
+		increaseFontSizeAction.setImageDescriptor(increaseFontIcon);
+		increaseFontSizeAction.setDisabledImageDescriptor(increaseFontIcon);
+		increaseFontSizeAction.setHoverImageDescriptor(increaseFontIcon);
 		getViewSite().getActionBars().getToolBarManager().add(increaseFontSizeAction);
 		
 		// add a decrease font size button
-		// icon from http://eclipse-icons.i24.cc
 		final Action decreaseFontSizeAction = new Action() {
 			public void run() {
 				decreaseFontSize();
@@ -173,20 +174,19 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		};
 		decreaseFontSizeAction.setText("Decrease Font");
 		decreaseFontSizeAction.setToolTipText("Decrease Font");
-		ImageDescriptor enabledDecreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/decrease.gif"));
-		ImageDescriptor disabledDecreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/decrease.gif"));
-		decreaseFontSizeAction.setImageDescriptor(enabledDecreaseFontIcon);
-		decreaseFontSizeAction.setDisabledImageDescriptor(disabledDecreaseFontIcon);
-		decreaseFontSizeAction.setHoverImageDescriptor(enabledDecreaseFontIcon);
+		ImageDescriptor decreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/decrease.gif"));
+		decreaseFontSizeAction.setImageDescriptor(decreaseFontIcon);
+		decreaseFontSizeAction.setDisabledImageDescriptor(decreaseFontIcon);
+		decreaseFontSizeAction.setHoverImageDescriptor(decreaseFontIcon);
 		getViewSite().getActionBars().getToolBarManager().add(decreaseFontSizeAction);
 		
 		// add a toggle selection listener button
 		// icon from http://eclipse-icons.i24.cc
-		ImageDescriptor activeSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/play.gif"));
-		ImageDescriptor pausedSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/pause.gif"));
+		final ImageDescriptor activeSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/play.gif"));
+		final ImageDescriptor pausedSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/pause.gif"));
 		final Action toggleSelectionListenerAction = new Action() {
 			public void run() {
-				toggleSelectionListener();
+				toggleGraphSelectionListener();
 				if(isGraphSelectionListenerEnabled()){
 					this.setImageDescriptor(pausedSelectionListenerIcon);
 					this.setDisabledImageDescriptor(pausedSelectionListenerIcon);
@@ -205,11 +205,37 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		toggleSelectionListenerAction.setHoverImageDescriptor(pausedSelectionListenerIcon);
 		getViewSite().getActionBars().getToolBarManager().add(toggleSelectionListenerAction);
 		
+		// pause and open new window button
+		// icon from http://eclipse-icons.i24.cc
+		final Action pauseAndOpenNewWindowAction = new Action() {
+			public void run() {
+				disableGraphSelectionListener();
+				toggleSelectionListenerAction.setImageDescriptor(activeSelectionListenerIcon);
+				toggleSelectionListenerAction.setDisabledImageDescriptor(activeSelectionListenerIcon);
+				toggleSelectionListenerAction.setHoverImageDescriptor(activeSelectionListenerIcon);
+				openNewWindow();
+			}
+		};
+		pauseAndOpenNewWindowAction.setText("Pause and Open New Window");
+		pauseAndOpenNewWindowAction.setToolTipText("Pause and Open New Window");
+		ImageDescriptor newWindowIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/new.png"));
+		pauseAndOpenNewWindowAction.setImageDescriptor(newWindowIcon);
+		pauseAndOpenNewWindowAction.setDisabledImageDescriptor(newWindowIcon);
+		pauseAndOpenNewWindowAction.setHoverImageDescriptor(newWindowIcon);
+		getViewSite().getActionBars().getToolBarManager().add(pauseAndOpenNewWindowAction);
+		
 		registerGraphHandlers();
 	}
 	
-	private void toggleSelectionListener() {
-		toggleGraphSelectionProvider();
+	private static int viewInstance = 1;
+	private void openNewWindow(){
+		try {
+			int instance = viewInstance++;
+			String secondaryID = (ID + "." + viewInstance);
+			CFRDecompilerCorrespondenceView view = (CFRDecompilerCorrespondenceView) PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(ID, secondaryID, IWorkbenchPage.VIEW_CREATE | IWorkbenchPage.VIEW_VISIBLE | IWorkbenchPage.VIEW_CREATE);
+		} catch (PartInitException e) {
+			Log.error("Could not open CFR Decompiler Correspondence view", e);
+		}
 	}
 	
 	private void increaseFontSize(){
