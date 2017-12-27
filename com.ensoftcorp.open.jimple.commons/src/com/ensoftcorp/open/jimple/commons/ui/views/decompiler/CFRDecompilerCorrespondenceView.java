@@ -2,6 +2,9 @@ package com.ensoftcorp.open.jimple.commons.ui.views.decompiler;
 
 import java.awt.Font;
 import java.awt.Frame;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.ByteArrayOutputStream;
@@ -180,6 +183,20 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		decreaseFontSizeAction.setHoverImageDescriptor(decreaseFontIcon);
 		getViewSite().getActionBars().getToolBarManager().add(decreaseFontSizeAction);
 		
+		// add a copy text to clipboard button
+		final Action copyTextToClipboardAction = new Action() {
+			public void run() {
+				copyTextToClipboard();
+			}
+		};
+		copyTextToClipboardAction.setText("Copy to Clipboard");
+		copyTextToClipboardAction.setToolTipText("Copy to Clipboard");
+		ImageDescriptor copyTextToClipboardIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/copy.gif"));
+		copyTextToClipboardAction.setImageDescriptor(copyTextToClipboardIcon);
+		copyTextToClipboardAction.setDisabledImageDescriptor(copyTextToClipboardIcon);
+		copyTextToClipboardAction.setHoverImageDescriptor(copyTextToClipboardIcon);
+		getViewSite().getActionBars().getToolBarManager().add(copyTextToClipboardAction);
+		
 		// add a toggle selection listener button
 		// icon from http://eclipse-icons.i24.cc
 		final ImageDescriptor activeSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/play.gif"));
@@ -255,6 +272,12 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			setFont(textArea, newFont);
 			textArea.revalidate();
 		}
+	}
+	
+	private void copyTextToClipboard(){
+	    StringSelection selection = new StringSelection(textArea.getText());
+	    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	    clipboard.setContents(selection, selection);
 	}
 	
 	/**
