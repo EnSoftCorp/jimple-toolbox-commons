@@ -248,8 +248,9 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	private void openNewWindow(){
 		try {
 			int instance = viewInstance++;
-			String secondaryID = (ID + "." + viewInstance);
+			String secondaryID = (ID + "." + instance);
 			CFRDecompilerCorrespondenceView view = (CFRDecompilerCorrespondenceView) PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(ID, secondaryID, IWorkbenchPage.VIEW_CREATE | IWorkbenchPage.VIEW_VISIBLE | IWorkbenchPage.VIEW_CREATE);
+			view.setFocus();
 		} catch (PartInitException e) {
 			Log.error("Could not open CFR Decompiler Correspondence view", e);
 		}
