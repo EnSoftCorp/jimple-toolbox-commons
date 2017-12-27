@@ -52,6 +52,7 @@ import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.commons.utilities.DisplayUtils;
 import com.ensoftcorp.open.commons.utilities.NodeSourceCorrespondenceSorter;
 import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
 import com.ensoftcorp.open.commons.utilities.selection.GraphSelectionListenerView;
@@ -196,6 +197,23 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		copyTextToClipboardAction.setDisabledImageDescriptor(copyTextToClipboardIcon);
 		copyTextToClipboardAction.setHoverImageDescriptor(copyTextToClipboardIcon);
 		getViewSite().getActionBars().getToolBarManager().add(copyTextToClipboardAction);
+		
+		// add a highlight text button
+		final Action highlightTextAction = new Action() {
+			public void run() {
+				String text = DisplayUtils.promptString("Text Highlighter", "Enter Text to Highlight");
+				if(text != null){
+					markOccurrences(text);
+				}
+			}
+		};
+		highlightTextAction.setText("Highlight Text");
+		highlightTextAction.setToolTipText("Highlight Text");
+		ImageDescriptor highlightTextIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/search.gif"));
+		highlightTextAction.setImageDescriptor(highlightTextIcon);
+		highlightTextAction.setDisabledImageDescriptor(highlightTextIcon);
+		highlightTextAction.setHoverImageDescriptor(highlightTextIcon);
+		getViewSite().getActionBars().getToolBarManager().add(highlightTextAction);
 		
 		// add a toggle selection listener button
 		// icon from http://eclipse-icons.i24.cc
