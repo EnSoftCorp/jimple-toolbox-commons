@@ -331,9 +331,14 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 				// we are processing another selection...
 				return;
 			}
-			processing = false;
-			processSelection(selection);
-			processing = true;
+			try {
+				processing = false;
+				processSelection(selection);
+			} catch (Throwable t){
+				Log.error("Error processing selection", t);
+			} finally {
+				processing = true;
+			}
 		}
 	}
 
