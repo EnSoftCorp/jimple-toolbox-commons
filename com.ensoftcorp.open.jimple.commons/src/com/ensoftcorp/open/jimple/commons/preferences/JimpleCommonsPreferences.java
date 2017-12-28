@@ -14,7 +14,7 @@ public class JimpleCommonsPreferences extends AbstractPreferenceInitializer {
 	 * Enable/disable indexing application jar annotations
 	 */
 	public static final String INDEX_APPLICATION_JAR_ANNOTATIONS = "INDEX_APPLICATION_JAR_ANNOTATIONS";
-	public static final Boolean INDEX_APPLICATION_JAR_ANNOTATIONS_DEFAULT = true;
+	public static final Boolean INDEX_APPLICATION_JAR_ANNOTATIONS_DEFAULT = false;
 	private static boolean indexApplicationJarAnnotationsValue = INDEX_APPLICATION_JAR_ANNOTATIONS_DEFAULT;
 	
 	public static boolean isApplicationJarAnnotationIndexerEnabled() {
