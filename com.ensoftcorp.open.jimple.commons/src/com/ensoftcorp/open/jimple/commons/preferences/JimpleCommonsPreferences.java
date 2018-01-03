@@ -84,7 +84,7 @@ public class JimpleCommonsPreferences extends AbstractPreferenceInitializer {
 	 * Enable/disable using original jars for CFR Decompiler Correspondence view
 	 */
 	public static final String CFR_CORRESPONDENCE_USE_ORIGINAL_JARS = "CFR_CORRESPONDENCE_USE_ORIGINAL_JARS";
-	public static final Boolean CFR_CORRESPONDENCE_USE_ORIGINAL_JARS_DEFAULT = false;
+	public static final Boolean CFR_CORRESPONDENCE_USE_ORIGINAL_JARS_DEFAULT = true;
 	private static boolean cfrCorrespondenceUseOriginalJarsValue = CFR_CORRESPONDENCE_USE_ORIGINAL_JARS_DEFAULT;
 	
 	/**
