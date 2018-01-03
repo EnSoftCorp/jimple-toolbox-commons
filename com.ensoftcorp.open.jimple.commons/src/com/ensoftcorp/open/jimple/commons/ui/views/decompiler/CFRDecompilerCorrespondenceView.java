@@ -482,7 +482,13 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 					try {
 						File compiledClass = getOrCreateCompiledClassFile(classNode);
 						try {
-							setText("\n\n" + decompileClass(compiledClass) + "\n\n");
+							String classpath = null;
+							SourceCorrespondence sc = (SourceCorrespondence) classNode.getAttr(XCSG.sourceCorrespondence);
+							if(sc != null){
+								IProject project = sc.sourceFile.getProject();
+								classpath = getProjectClasspath(project);
+							}
+							setText("\n\n" + decompileClass(compiledClass, classpath) + "\n\n");
 						} catch (Exception e) {
 							setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
 						}
@@ -502,6 +508,18 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		}
 
 		markOccurrences(variableSelections);
+	}
+	
+	public String getProjectClasspath(IProject project) throws Exception {
+		String classpath = "";
+		String prefix = "";
+		for(Jar jar : ProjectJarProperties.getJars(project)) {
+			classpath += prefix + new File(project.getFile(jar.getPortablePath()).getLocation().toOSString()).getAbsolutePath();
+			if(prefix.isEmpty()) {
+				prefix  = ",";
+			}
+		}
+		return classpath;
 	}
 	
 	public void setText(String text){
@@ -557,7 +575,8 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		} else {
 			SourceCorrespondence sc = (SourceCorrespondence) classNode.getAttr(XCSG.sourceCorrespondence);
 			if(sc != null){
-				// compiles all of the jimple in the corresponding project\nmight as well do as much as we can in one pass\n
+				// compiles all of the jimple in the corresponding project
+				// might as well do as much as we can in one pass
 				IProject project = sc.sourceFile.getProject();
 				File projectClassesDirectory = new File(compiledClassesDirectory.getAbsolutePath() + File.separator + project.getName());
 				if(!projectClassesDirectory.exists()){
@@ -668,7 +687,17 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		if(!classFile.exists()){
 			return "Could not find corresponding class file: " + classFile.getAbsolutePath();
 		} else {
-			return decompileClass(classFile);
+			String classpath = null;
+			SourceCorrespondence sc = (SourceCorrespondence) classNode.getAttr(XCSG.sourceCorrespondence);
+			if(sc != null){
+				IProject project = sc.sourceFile.getProject();
+				try {
+					classpath = getProjectClasspath(project);
+				} catch (Exception e) {
+					Log.warning("Could not recover project classpath for " + project.getName());
+				}
+			}
+			return decompileClass(classFile, classpath);
 		}
 	}
 	
@@ -689,8 +718,13 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		}
 	}
 	
-	private String decompileClass(File classFile){
-		String[] args = new String[]{classFile.getAbsolutePath(), "--silent"};
+	private String decompileClass(File classFile, String classpath){
+		String[] args;
+		if(classpath != null) {
+			args = new String[]{classFile.getAbsolutePath(), "--silent", "--extraclasspath", classpath};
+		} else {
+			args = new String[]{classFile.getAbsolutePath(), "--silent"};
+		}
 		return stripCFRHeader(runCFR(args));
 	}
 	
