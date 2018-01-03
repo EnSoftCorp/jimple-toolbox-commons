@@ -91,13 +91,18 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	}
 	
 	private String stripCFRHeader(String source){
-		// strips the following comment block by knowing its exact length
-//		/*
-//		 * Decompiled with CFR 0_123.
-//		 */
-		final int HEADER_SIZE = 37;
-		if(source.length() > HEADER_SIZE){
-			return source.substring(HEADER_SIZE, source.length());
+		int index = source.indexOf("*/");
+		if(index == 34) {
+			// strips the following comment block by knowing its exact length
+//			/*
+//			 * Decompiled with CFR 0_123.
+//			 */
+			final int HEADER_SIZE = 37;
+			if(source.length() > HEADER_SIZE){
+				return source.substring(HEADER_SIZE, source.length());
+			} else {
+				return source;
+			}
 		} else {
 			return source;
 		}
@@ -151,6 +156,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		statusLabel = new Label(parent, SWT.NONE);
 		statusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		if(indexExists()){
+			setText("");
 			statusLabel.setText("Empty Selection.");
 		} else {
 			statusLabel.setText("Map a Jimple project.");
@@ -370,6 +376,12 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			return;
 		}
 		
+		if(filteredSelection.containers().nodes(XCSG.Library).eval().nodes().isEmpty()){
+			setText("");
+			statusLabel.setText("Selection must be contained in a Jar library.");
+			return;
+		}
+		
 		if(classes.isEmpty()){
 			if(methods.isEmpty()){
 				statusLabel.setText("Empty Selection.");
@@ -449,17 +461,17 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		} else {
 			if(classes.size() == 1){
 				Node classNode = classes.one();
-				statusLabel.setText("Selection: " + CommonQueries.getQualifiedTypeName(classNode));
+				statusLabel.setText("Selection: " + CommonQueries.getQualifiedClassName(classNode));
 				if(JimpleCommonsPreferences.isCFRCorrespondenceUseOriginalJarsEnabled()){
 					try {
 						File extractedJar = getOrCreateExtractedJar(classNode);
 						try {
 							setText("\n\n" + decompileClassFromJar(extractedJar, classNode) + "\n\n");
 						} catch (Exception e) {
-							setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + ":" + e.getMessage() + "\n\n");
+							setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
 						}
 					} catch (Exception e) {
-						setText("\n\nSEARCH ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + ":" + e.getMessage() + "\n\n");
+						setText("\n\nSEARCH ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
 					}
 				} else {
 					try {
@@ -467,10 +479,10 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 						try {
 							setText("\n\n" + decompileClass(compiledClass) + "\n\n");
 						} catch (Exception e) {
-							setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + ":" + e.getMessage() + "\n\n");
+							setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
 						}
 					} catch (Exception e) {
-						setText("\n\nSOOT ERROR: " + CommonQueries.getQualifiedTypeName(classNode) + ":" + e.getMessage() + "\n\n");
+						setText("\n\nSOOT ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
 					}
 				}
 			} else if(classes.size() > 2){
@@ -556,7 +568,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 					Compilation.compile(project, jimpleDirectory, outputDirectory, allowPhantomReferences, useOriginalNames, new ArrayList<File>(), outputBytecode, jarify);
 					statusLabel.setText(previousText);
 				}
-				String qualifiedClass = CommonQueries.getQualifiedTypeName(classNode);
+				String qualifiedClass = CommonQueries.getQualifiedClassName(classNode);
 				File classFile = new File(projectClassesDirectory.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
 				if(!classFile.exists()){
 					throw new FileNotFoundException("Could not find generated class file: " + classFile.getAbsolutePath());
@@ -605,8 +617,10 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 						}
 					}
 				} else {
-					// TODO: how to find corresponding jar for a project selection?
-					// annoying we don't even know the jar name for this case\n
+					// we can't find corresponding jar for a project selection
+					// annoying we don't even know the jar name for this case
+					// user should use the soot compilation switch if the want 
+					// to view the decompiled output of jimple not contained in a jar
 					throw new UnsupportedOperationException("Jimple selections within project containers are currently not supported.");
 				}
 				
@@ -644,7 +658,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		if(!classNode.taggedWith(XCSG.Classifier)){
 			throw new IllegalArgumentException("Parameter methodNode must be an XCSG.Classifier.");
 		}
-		String qualifiedClass = CommonQueries.getQualifiedTypeName(classNode);
+		String qualifiedClass = CommonQueries.getQualifiedClassName(classNode);
 		File classFile = new File(extractedJar.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
 		if(!classFile.exists()){
 			return "Could not find corresponding class file: " + classFile.getAbsolutePath();
@@ -661,7 +675,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			throw new IllegalArgumentException("Parameter methodNode must not be a constructor or initializer method.");
 		}
 		Node classNode = Common.toQ(methodNode).parent().eval().nodes().one();
-		String qualifiedClass = CommonQueries.getQualifiedTypeName(classNode);
+		String qualifiedClass = CommonQueries.getQualifiedClassName(classNode);
 		File classFile = new File(extractedJar.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
 		if(!classFile.exists()){
 			return "Could not find corresponding class file: " + classFile.getAbsolutePath();
@@ -689,33 +703,34 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 
 	private String runCFR(String[] args) {
 		// temporarily redirect System.out to byte array
-	    ByteArrayOutputStream stdoutbaos = new ByteArrayOutputStream();
-	    PrintStream alternatePrintStream = new PrintStream(stdoutbaos);
-	    ByteArrayOutputStream stderrbaos = new ByteArrayOutputStream();
-	    PrintStream alternatePrintErrorStream = new PrintStream(stderrbaos);
-	    PrintStream originalPrintStream = System.out;
-	    PrintStream originalPrintErrorStream = System.err;
-	    try {
-	    	System.setOut(alternatePrintStream);
-	    	System.setErr(alternatePrintErrorStream);
-	    	org.benf.cfr.reader.Main.main(args);
-	    	System.out.flush();
-	    	System.err.flush();
-	    } finally {
-	    	System.setOut(originalPrintStream);
-	    	System.setErr(originalPrintErrorStream);
-	    }
-	    String result = stdoutbaos.toString().trim();
-	    String error = stderrbaos.toString().trim();
-	    if(!error.isEmpty() && result.isEmpty()){
-	    	throw new RuntimeException("CFR Error\n" + error);
-	    } else {
-	    	return result;
-	    }
+		ByteArrayOutputStream stdoutbaos = new ByteArrayOutputStream();
+		PrintStream alternatePrintStream = new PrintStream(stdoutbaos);
+		ByteArrayOutputStream stderrbaos = new ByteArrayOutputStream();
+		PrintStream alternatePrintErrorStream = new PrintStream(stderrbaos);
+		PrintStream originalPrintStream = System.out;
+		PrintStream originalPrintErrorStream = System.err;
+		try {
+			System.setOut(alternatePrintStream);
+			System.setErr(alternatePrintErrorStream);
+			org.benf.cfr.reader.Main.main(args);
+			System.out.flush();
+			System.err.flush();
+		} finally {
+			System.setOut(originalPrintStream);
+			System.setErr(originalPrintErrorStream);
+		}
+		String result = stdoutbaos.toString().trim();
+		String error = stderrbaos.toString().trim();
+		if (!error.isEmpty() && result.isEmpty()) {
+			throw new RuntimeException("CFR Error\n" + error);
+		} else {
+			return result;
+		}
 	}
 	
 	@Override
 	public void indexBecameUnaccessible() {
+		setText("");
 		statusLabel.setText("Map a Jimple project.");
 	}
 
