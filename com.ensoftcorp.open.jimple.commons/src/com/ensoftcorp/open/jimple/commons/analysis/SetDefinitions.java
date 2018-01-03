@@ -1,7 +1,17 @@
 package com.ensoftcorp.open.jimple.commons.analysis;
 
+import org.eclipse.core.resources.IProject;
+
+import com.ensoftcorp.atlas.core.db.graph.Node;
+import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
+import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.script.Common;
+import com.ensoftcorp.atlas.core.xcsg.XCSG;
+import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
+import com.ensoftcorp.open.java.commons.project.ProjectJarProperties;
+import com.ensoftcorp.open.java.commons.project.ProjectJarProperties.Jar;
+import com.ensoftcorp.open.jimple.commons.log.Log;
 
 public class SetDefinitions {
 
@@ -41,7 +51,23 @@ public class SetDefinitions {
 	 * the index.
 	 */
 	public static Q libraries() {
-		return com.ensoftcorp.open.java.commons.analysis.SetDefinitions.libraries();
+		AtlasSet<Node> result = new AtlasHashSet<Node>();
+		AtlasSet<Node> libraries = com.ensoftcorp.open.java.commons.analysis.SetDefinitions.libraries().eval().nodes();
+		for(Node projectNode : Common.universe().nodes(XCSG.Project).eval().nodes()) {
+			try {
+				IProject project = WorkspaceUtils.getProject(projectNode.getAttr(XCSG.name).toString());
+				for(Jar jar : ProjectJarProperties.getLibraryJars(project)) {
+					for(Node library : libraries) {
+						if(library.getAttr(XCSG.name).toString().endsWith(jar.getFile().getName())) {
+							result.add(library);
+						}
+					}
+				}
+			} catch (Exception e) {
+				Log.warning("Error accessing project jar properties", e);
+			}
+		}
+		return Common.toQ(result);
 	}
 	
 	/**
@@ -51,7 +77,7 @@ public class SetDefinitions {
 	 * For Jimple everything can appear under a library, so we define the application with respect to the JDK libraries
 	 */
 	public static Q app() {
-		return Common.universe().difference(JDKLibraries().contained(), SetDefinitions.primitiveTypes(), SetDefinitions.arrayTypes());
+		return Common.universe().difference(JDKLibraries().contained(), libraries().contained(), SetDefinitions.primitiveTypes(), SetDefinitions.arrayTypes());
 	}
 	
 }
