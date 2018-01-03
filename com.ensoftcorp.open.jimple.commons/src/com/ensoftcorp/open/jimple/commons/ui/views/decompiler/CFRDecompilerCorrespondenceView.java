@@ -14,6 +14,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -23,6 +24,7 @@ import javax.swing.ScrollPaneConstants;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
@@ -60,6 +62,7 @@ import com.ensoftcorp.open.java.commons.analysis.CommonQueries;
 import com.ensoftcorp.open.java.commons.bytecode.JarInspector;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties.Jar;
+import com.ensoftcorp.open.jimple.commons.Activator;
 import com.ensoftcorp.open.jimple.commons.preferences.JimpleCommonsPreferences;
 import com.ensoftcorp.open.jimple.commons.soot.Compilation;
 import com.ensoftcorp.open.jimple.commons.soot.SootConversionException;
@@ -79,7 +82,9 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		setPartName("CFR Decompiler Correspondence");
 		setTitleImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/partial.gif"));
 		try {
-			tempDirectory = Files.createTempDirectory("CFRDecompiler").toFile();
+			IPath stateLocation = Activator.getDefault().getStateLocation();
+			Path stateLocationPath = stateLocation.toFile().toPath();
+			tempDirectory = Files.createTempDirectory(stateLocationPath, "CFRDecompiler").toFile();
 			tempDirectory.deleteOnExit(); // cleanup later if something bad happens
 			extractedJarsDirectory = new File(tempDirectory.getAbsolutePath() + File.separator + "ExtractedJars");
 			extractedJarsDirectory.mkdirs();
