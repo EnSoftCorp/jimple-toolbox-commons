@@ -96,6 +96,9 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	}
 	
 	private String stripCFRHeader(String source){
+		// check to see if the header comment block ends where we expect it to end
+		// if its not then the comment header block contains some message the user
+		// probably wants to know (such as issues with the classpath)
 		int index = source.indexOf("*/");
 		if(index == 34) {
 			// strips the following comment block by knowing its exact length
@@ -373,7 +376,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		// flush out the Qs to sets of nodes
 		AtlasSet<Node> methods = new AtlasHashSet<Node>(selectedMethods.eval().nodes());
 		AtlasSet<Node> classes = new AtlasHashSet<Node>(selectedClasses.eval().nodes());
-		AtlasSet<Node> variableSelections = new AtlasHashSet<Node>(methodContentSelections.nodes(XCSG.DataFlow_Node).eval().nodes());
+		AtlasSet<Node> variableSelections = new AtlasHashSet<Node>(selectedFields.union(methodContentSelections.nodes(XCSG.DataFlow_Node)).eval().nodes());
 		
 		if(!classes.isEmpty() && !methods.isEmpty()){
 			setText("");
