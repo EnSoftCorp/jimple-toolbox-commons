@@ -32,6 +32,7 @@ import org.eclipse.swt.awt.SWT_AWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
@@ -71,9 +72,10 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	
 	private static final String ID = "com.ensoftcorp.open.jimple.commons.ui.views.decompiler";
 	
-	private File tempDirectory = null;
-	private File extractedJarsDirectory = null;
-	private File compiledClassesDirectory = null;
+	private static File tempDirectory = null;
+	private static File extractedJarsDirectory = null;
+	private static File compiledClassesDirectory = null;
+	
 	private Label statusLabel;
 	private RSyntaxTextArea textArea;
 	private boolean processing = true;
@@ -342,17 +344,22 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	public void selectionChanged(Graph selection) {
 		synchronized (CFRDecompilerCorrespondenceView.class){
 			if(!processing){
-				// we are processing another selection...
+				// we are processing another selection...ignore this selection
 				return;
 			}
-			try {
-				processing = false;
-				processSelection(selection);
-			} catch (Throwable t){
-				Log.error("Error processing selection", t);
-			} finally {
-				processing = true;
-			}
+			Display.getDefault().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						processing = false;
+						processSelection(selection);
+					} catch (Throwable t){
+						Log.error("Error processing selection", t);
+					} finally {
+						processing = true;
+					}
+				}
+			});
 		}
 	}
 
@@ -510,7 +517,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 			}
 		}
 
-		markOccurrences(variableSelections);
+		markOccurrences(Common.toQ(variableSelections).union(filteredSelection.nodes(XCSG.Method,XCSG.CallSite)).eval().nodes());
 	}
 	
 	public String getProjectClasspath(IProject project) throws Exception {
@@ -529,23 +536,44 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		textArea.setText(text.trim());
 	}
 
-	private void markOccurrences(AtlasSet<Node> variableSelections) {
+	private void markOccurrences(AtlasSet<Node> selections) {
 		boolean occurrencesMarked = false;
-		if(variableSelections.size() == 1){
-			Node variable = variableSelections.one();
+		if(selections.size() == 1){
+			Node selection = selections.one();
 			String word = "";
-			if(variable.taggedWith(XCSG.Operator)){
-				// operators are a little weird, so skipping
-			} if(variable.taggedWith(XCSG.Assignment)) {
-				word = variable.getAttr(XCSG.name).toString().trim();
-				// remove the "="
-				if(word.endsWith("=")){
-					word = word.substring(0, word.length() - 1);
-					word = word.trim();
-				}
-			} else {
-				word = variable.getAttr(XCSG.name).toString().trim();
+			
+			// handle method selection
+			if(selection.taggedWith(XCSG.Method)) {
+				Node method = selection;
+				word = method.getAttr(XCSG.name).toString().trim();
 			}
+
+			// handle a callsite selection
+			else if(selection.taggedWith(XCSG.CallSite)) {
+				Node callsite = selection;
+				String callsiteString = callsite.getAttr(XCSG.name).toString().trim();
+				if(callsiteString.contains("(")) {
+					word = callsiteString.substring(0, callsiteString.indexOf("("));
+				}
+			}
+			
+			// handle variable selection
+			else if(selection.taggedWith(XCSG.DataFlow_Node) || selection.taggedWith(XCSG.Field)) {
+				Node variable = selections.one();
+				if(variable.taggedWith(XCSG.Operator)){
+					// operators are a little weird, so skipping
+				} if(variable.taggedWith(XCSG.Assignment)) {
+					word = variable.getAttr(XCSG.name).toString().trim();
+					// remove the "="
+					if(word.endsWith("=")){
+						word = word.substring(0, word.length() - 1);
+						word = word.trim();
+					}
+				} else {
+					word = variable.getAttr(XCSG.name).toString().trim();
+				}
+			}
+			
 			// if we have a word, mark the occurrences of the word
 			if(!word.isEmpty()){
 				markOccurrences(word);
@@ -660,6 +688,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 					return extractedJarDirectory;
 				} else {
 					try {
+						statusLabel.setText("Extracting " + jarFile.getName() + " contents...");
 						extractedJarDirectory.mkdirs();
 						JarInspector inspector = new JarInspector(jarFile);
 						for(String entry : inspector.getJarEntrySet()){
