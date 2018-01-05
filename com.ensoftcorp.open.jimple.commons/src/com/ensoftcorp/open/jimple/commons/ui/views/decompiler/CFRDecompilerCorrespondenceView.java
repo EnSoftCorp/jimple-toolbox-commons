@@ -58,7 +58,7 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.utilities.DisplayUtils;
 import com.ensoftcorp.open.commons.utilities.NodeSourceCorrespondenceSorter;
 import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
-import com.ensoftcorp.open.commons.utilities.selection.GraphSelectionListenerView;
+import com.ensoftcorp.open.commons.utilities.selection.GraphSelectionProviderView;
 import com.ensoftcorp.open.java.commons.analysis.CommonQueries;
 import com.ensoftcorp.open.java.commons.bytecode.JarInspector;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties;
@@ -68,7 +68,7 @@ import com.ensoftcorp.open.jimple.commons.preferences.JimpleCommonsPreferences;
 import com.ensoftcorp.open.jimple.commons.soot.Compilation;
 import com.ensoftcorp.open.jimple.commons.soot.SootConversionException;
 
-public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView {
+public class CFRDecompilerCorrespondenceView extends GraphSelectionProviderView {
 	
 	private static final String ID = "com.ensoftcorp.open.jimple.commons.ui.views.decompiler";
 	
@@ -78,7 +78,8 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	
 	private Label statusLabel;
 	private RSyntaxTextArea textArea;
-	private boolean processing = true;
+	private boolean processing = false;
+	private AtlasSet<Node> lastSelectionScope = new AtlasHashSet<Node>();
 	
 	public CFRDecompilerCorrespondenceView() {
 		setPartName("CFR Decompiler Correspondence");
@@ -129,23 +130,68 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		textArea.setCodeFoldingEnabled(true);
 		textArea.setAntiAliasingEnabled(true);
 		textArea.setEditable(false);
+		textArea.setFocusable(false);
 		if(Themes.ECLIPSE != null){
 			Themes.ECLIPSE.apply(textArea);
 		}
-		
+
 		// add a mark occurrences helper
 		// adapted from: https://github.com/bobbylight/RSyntaxTextArea/issues/88
 		textArea.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				if (e.getClickCount() == 1) {
-					textArea.clearMarkAllHighlights();
-				} else if (e.getClickCount() == 2) {
-					String word = textArea.getSelectedText();
-					if(word != null){
-						word = word.trim();
-						if (!word.isEmpty()){
-							markOccurrences(word);
+				synchronized (CFRDecompilerCorrespondenceView.class){
+					if (e.getClickCount() == 1) {
+						textArea.clearMarkAllHighlights();
+					} else if (e.getClickCount() == 2) {
+						String word = textArea.getSelectedText();
+						if(word != null){
+							word = word.trim();
+							final String selectedWord = word;
+							if (!selectedWord.isEmpty()){
+								markOccurrences(selectedWord);
+								
+								// check if this selection could be used to drive a selection provider
+								if(isGraphSelectionProviderEnabled()) {
+									Display.getDefault().syncExec(new Runnable() {
+										@Override
+										public void run() {
+											AtlasSet<Node> selectionEvent = new AtlasHashSet<Node>();
+											// first match against the scope selection itself (class or method)
+											for(Node scope : lastSelectionScope) {
+												if(scope.getAttr(XCSG.name).toString().contains(selectedWord)) {
+													selectionEvent.add(scope);
+												}
+											}
+											if(selectionEvent.isEmpty()) {
+												// expand the scope to the contents of the scope
+												AtlasSet<Node> lastSelectionScopeContents = Common.toQ(lastSelectionScope).contained().eval().nodes();
+												for(Node node : lastSelectionScopeContents) {
+													// TODO: we could have some toggled filters for CF,DF,etc here
+													// for now we just blast the selection events out and let the smart views, etc. sort them out...
+													if(node.getAttr(XCSG.name).toString().contains(selectedWord)) {
+														selectionEvent.add(node);
+														// if this is a callsite we might also consider target methods
+														if(node.taggedWith(XCSG.CallSite) || node.taggedWith(XCSG.Instantiation)) {
+															// being a little overly generous to cover all my bases here...
+															Q containedMethods = Common.toQ(lastSelectionScope).contained().nodes(XCSG.Method);
+															Q calledMethods = Common.universe().edges(XCSG.Call).successors(containedMethods);
+															for(Node targetMethod : calledMethods.eval().nodes()) {
+																if(targetMethod.getAttr(XCSG.name).toString().contains(selectedWord)) {
+																	selectionEvent.add(targetMethod);
+																}
+															}
+														}
+													}
+												}
+											}
+											if(!selectionEvent.isEmpty()) {
+												setSelection(Common.toQ(selectionEvent));
+											}
+										}
+									});
+								}
+							}
 						}
 					}
 				}
@@ -233,10 +279,15 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		
 		// add a toggle selection listener button
 		// icon from http://eclipse-icons.i24.cc
-		final ImageDescriptor activeSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/play.gif"));
-		final ImageDescriptor pausedSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/pause.gif"));
+		final ImageDescriptor activeSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/playlistener.gif"));
+		final ImageDescriptor pausedSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/pauselistener.gif"));
 		final Action toggleSelectionListenerAction = new Action() {
 			public void run() {
+				processing = true;
+				if(isGraphSelectionProviderEnabled()) {
+					DisplayUtils.showMessage("Selection provider must be disabled.");
+					return;
+				}
 				toggleGraphSelectionListener();
 				if(isGraphSelectionListenerEnabled()){
 					this.setImageDescriptor(pausedSelectionListenerIcon);
@@ -247,6 +298,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 					this.setDisabledImageDescriptor(activeSelectionListenerIcon);
 					this.setHoverImageDescriptor(activeSelectionListenerIcon);
 				}
+				processing = false;
 			}
 		};
 		toggleSelectionListenerAction.setText("Toggle Selection Listener");
@@ -255,6 +307,39 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 		toggleSelectionListenerAction.setDisabledImageDescriptor(pausedSelectionListenerIcon);
 		toggleSelectionListenerAction.setHoverImageDescriptor(pausedSelectionListenerIcon);
 		getViewSite().getActionBars().getToolBarManager().add(toggleSelectionListenerAction);
+		
+		// add a toggle selection listener button
+		// icon from http://eclipse-icons.i24.cc
+		// by default this feature is turned off
+		this.disableGraphSelectionProvider();
+		final ImageDescriptor activeSelectionProviderIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/playprovider.gif"));
+		final ImageDescriptor pausedSelectionProviderIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/pauseprovider.gif"));
+		final Action toggleSelectionProviderAction = new Action() {
+			public void run() {
+				processing = true;
+				toggleGraphSelectionProvider();
+				if(isGraphSelectionProviderEnabled()){
+					disableGraphSelectionListener();
+					toggleSelectionListenerAction.setImageDescriptor(activeSelectionListenerIcon);
+					toggleSelectionListenerAction.setDisabledImageDescriptor(activeSelectionListenerIcon);
+					toggleSelectionListenerAction.setHoverImageDescriptor(activeSelectionListenerIcon);
+					this.setImageDescriptor(pausedSelectionProviderIcon);
+					this.setDisabledImageDescriptor(pausedSelectionProviderIcon);
+					this.setHoverImageDescriptor(pausedSelectionProviderIcon);
+				} else {
+					this.setImageDescriptor(activeSelectionProviderIcon);
+					this.setDisabledImageDescriptor(activeSelectionProviderIcon);
+					this.setHoverImageDescriptor(activeSelectionProviderIcon);
+				}
+				processing = false;
+			}
+		};
+		toggleSelectionProviderAction.setText("Toggle Selection Provider");
+		toggleSelectionProviderAction.setToolTipText("Toggle Selection Provider");
+		toggleSelectionProviderAction.setImageDescriptor(activeSelectionProviderIcon);
+		toggleSelectionProviderAction.setDisabledImageDescriptor(activeSelectionProviderIcon);
+		toggleSelectionProviderAction.setHoverImageDescriptor(activeSelectionProviderIcon);
+		getViewSite().getActionBars().getToolBarManager().add(toggleSelectionProviderAction);
 		
 		// pause and open new window button
 		// icon from http://eclipse-icons.i24.cc
@@ -343,7 +428,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	@Override
 	public void selectionChanged(Graph selection) {
 		synchronized (CFRDecompilerCorrespondenceView.class){
-			if(!processing){
+			if(processing){
 				// we are processing another selection...ignore this selection
 				return;
 			}
@@ -351,12 +436,16 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 				@Override
 				public void run() {
 					try {
-						processing = false;
+						processing = true;
 						processSelection(selection);
+					} catch (org.eclipse.swt.SWTException e) {
+						// just swallowing any disposed widget exceptions here, 
+						// they could happen if a selection was still being processed
+						// but we don't really care at this point
 					} catch (Throwable t){
 						Log.error("Error processing selection", t);
 					} finally {
-						processing = true;
+						processing = false;
 					}
 				}
 			});
@@ -364,160 +453,168 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	}
 
 	private void processSelection(Graph selection) {
-		Q filteredSelection = Common.toQ(filter(selection));
-		Q selectedMethods = filteredSelection.nodes(XCSG.Method);
-		Q methodContentSelections = filteredSelection.nodes(XCSG.ControlFlow_Node, XCSG.DataFlow_Node).difference(filteredSelection.nodes(XCSG.Field));
-		Q containingMethods = CommonQueries.getContainingMethods(methodContentSelections);
-		selectedMethods = selectedMethods.union(containingMethods);
-		
-		// weed out the initializers since CFR doesn't seem to support decompiling just class initializers
-		// instead we will compensate by decompiling the whole class
-		Q selectedInitializers = selectedMethods.nodes(XCSG.Constructor).union(selectedMethods.selectNode(XCSG.name, "<init>"), selectedMethods.selectNode(XCSG.name, "<clinit>"));
-		selectedMethods = selectedMethods.difference(selectedInitializers);
-		
-		// selections of fields will resulting decompiling the whole class as well since what good would showing just a method signature do
-		// a really fancy analysis could show just methods that read or write to the field, but currently leaving that for another day...
-		Q selectedFields = filteredSelection.nodes(XCSG.Field);
-		Q selectedClasses = filteredSelection.nodes(XCSG.Classifier).union(selectedFields.parent(), selectedInitializers.parent());
-		
-		// flush out the Qs to sets of nodes
-		AtlasSet<Node> methods = new AtlasHashSet<Node>(selectedMethods.eval().nodes());
-		AtlasSet<Node> classes = new AtlasHashSet<Node>(selectedClasses.eval().nodes());
-		AtlasSet<Node> variableSelections = new AtlasHashSet<Node>(selectedFields.union(methodContentSelections.nodes(XCSG.DataFlow_Node)).eval().nodes());
-		
-		if(!classes.isEmpty() && !methods.isEmpty()){
-			setText("");
-			statusLabel.setText("Mixed selection types not supported.");
-			return;
-		}
-		
-		if(filteredSelection.containers().nodes(XCSG.Library).eval().nodes().isEmpty()){
-			setText("");
-			statusLabel.setText("Selection must be contained in a Jar library.");
-			return;
-		}
-		
-		if(classes.isEmpty()){
-			if(methods.isEmpty()){
-				statusLabel.setText("Empty Selection.");
-			} else if(methods.size() > 1){
-				statusLabel.setText("Selection: " + methods.size() + " methods.");
-				ArrayList<Node> sortedMethods = new ArrayList<Node>((int) methods.size());
-				for(Node method : methods){
-					sortedMethods.add(method);
-				}
-				Collections.sort(sortedMethods, new NodeSourceCorrespondenceSorter());
-				StringBuilder text = new StringBuilder();
-				for(Node method : sortedMethods){
-					text.append("\n\n");
-					Node classNode = Common.toQ(method).parent().eval().nodes().one();
-					if(JimpleCommonsPreferences.isCFRCorrespondenceUseOriginalJarsEnabled()){
-						try {
-							File extractedJar = getOrCreateExtractedJar(classNode);
-							try {
-								text.append(decompileMethodFromJar(extractedJar, method));
-							} catch (Exception e) {
-								String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
-								text.append("CFR ERROR: " + qualifiedMethod);
-							}
-						} catch (Exception e) {
-							String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
-							text.append("SEARCH ERROR: " + qualifiedMethod);
-						}
-					} else {
-						try {
-							File compiledClass = getOrCreateCompiledClassFile(classNode);
-							try {
-								text.append(decompileMethodFromClass(compiledClass, method));
-							} catch (Exception e) {
-								String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
-								text.append("CFR ERROR: " + qualifiedMethod);
-							}
-						} catch (Exception e) {
-							String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
-							text.append("SOOT ERROR: " + qualifiedMethod);
-						}
-					}
-				}
-				text.append("\n\n");
-				setText(text.toString().trim());
-			} else {
-				Node method = methods.one();
-				statusLabel.setText("Selection: " + CommonQueries.getQualifiedMethodName(method));
-				Node classNode = Common.toQ(method).parent().eval().nodes().one();
-				try {
-					if(JimpleCommonsPreferences.isCFRCorrespondenceUseOriginalJarsEnabled()){
-						try {
-							File extractedJar = getOrCreateExtractedJar(classNode);
-							try {
-								setText("\n\n" + decompileMethodFromJar(extractedJar, method) + "\n\n");
-							} catch (Exception e) {
-								setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + ":" + e.getMessage() + "\n\n");
-							}
-						} catch (Exception e) {
-							setText("\n\nSEARCH ERROR: " + CommonQueries.getQualifiedMethodName(method) + ":" + e.getMessage() + "\n\n");
-						}
-					} else {
-						try {
-							File compiledClass = getOrCreateCompiledClassFile(classNode);
-							try {
-								setText("\n\n" + decompileMethodFromClass(compiledClass, method) + "\n\n");
-							} catch (Exception e) {
-								setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + ":" + e.getMessage() + "\n\n");
-							}
-						} catch (Exception e) {
-							setText("\n\nSOOT ERROR: " + CommonQueries.getQualifiedMethodName(method) + ":" + e.getMessage() + "\n\n");
-						}
-					}
-				} catch (Exception e) {
-					setText("\n\nERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n\n");
-				}
-			}
-		} else {
-			if(classes.size() == 1){
-				Node classNode = classes.one();
-				statusLabel.setText("Selection: " + CommonQueries.getQualifiedClassName(classNode));
-				if(JimpleCommonsPreferences.isCFRCorrespondenceUseOriginalJarsEnabled()){
-					try {
-						File extractedJar = getOrCreateExtractedJar(classNode);
-						try {
-							setText("\n\n" + decompileClassFromJar(extractedJar, classNode) + "\n\n");
-						} catch (Exception e) {
-							setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
-						}
-					} catch (Exception e) {
-						setText("\n\nSEARCH ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
-					}
-				} else {
-					try {
-						File compiledClass = getOrCreateCompiledClassFile(classNode);
-						try {
-							String classpath = null;
-							SourceCorrespondence sc = (SourceCorrespondence) classNode.getAttr(XCSG.sourceCorrespondence);
-							if(sc != null){
-								IProject project = sc.sourceFile.getProject();
-								classpath = getProjectClasspath(project);
-							}
-							setText("\n\n" + decompileClass(compiledClass, classpath) + "\n\n");
-						} catch (Exception e) {
-							setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
-						}
-					} catch (Exception e) {
-						setText("\n\nSOOT ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
-					}
-				}
-			} else if(classes.size() > 2){
-				setText("");
-				statusLabel.setText("Multiple class selections not supported.");
-				return;
-			} else {
+		synchronized (CFRDecompilerCorrespondenceView.class) {
+			Q filteredSelection = Common.toQ(filter(selection));
+			Q selectedMethods = filteredSelection.nodes(XCSG.Method);
+			Q methodContentSelections = filteredSelection.nodes(XCSG.ControlFlow_Node, XCSG.DataFlow_Node).difference(filteredSelection.nodes(XCSG.Field));
+			Q containingMethods = CommonQueries.getContainingMethods(methodContentSelections);
+			selectedMethods = selectedMethods.union(containingMethods);
+			
+			// weed out the initializers since CFR doesn't seem to support decompiling just class initializers
+			// instead we will compensate by decompiling the whole class
+			Q selectedInitializers = selectedMethods.nodes(XCSG.Constructor).union(selectedMethods.selectNode(XCSG.name, "<init>"), selectedMethods.selectNode(XCSG.name, "<clinit>"));
+			selectedMethods = selectedMethods.difference(selectedInitializers);
+			
+			// selections of fields will resulting decompiling the whole class as well since what good would showing just a method signature do
+			// a really fancy analysis could show just methods that read or write to the field, but currently leaving that for another day...
+			Q selectedFields = filteredSelection.nodes(XCSG.Field);
+			Q selectedClasses = filteredSelection.nodes(XCSG.Classifier).union(selectedFields.parent(), selectedInitializers.parent());
+			
+			// flush out the Qs to sets of nodes
+			AtlasSet<Node> methods = new AtlasHashSet<Node>(selectedMethods.eval().nodes());
+			AtlasSet<Node> classes = new AtlasHashSet<Node>(selectedClasses.eval().nodes());
+			AtlasSet<Node> variableSelections = new AtlasHashSet<Node>(selectedFields.union(methodContentSelections.nodes(XCSG.DataFlow_Node)).eval().nodes());
+			
+			if(!classes.isEmpty() && !methods.isEmpty()){
+				lastSelectionScope.clear();
 				setText("");
 				statusLabel.setText("Mixed selection types not supported.");
 				return;
 			}
-		}
+			
+			if(filteredSelection.containers().nodes(XCSG.Library).eval().nodes().isEmpty()){
+				setText("");
+				statusLabel.setText("Selection must be contained in a Jar library.");
+				return;
+			}
+			
+			// update the last selection scope
+			lastSelectionScope.clear();
+			lastSelectionScope.addAll(methods);
+			lastSelectionScope.addAll(classes);
+			
+			if(classes.isEmpty()){
+				if(methods.isEmpty()){
+					statusLabel.setText("Empty Selection.");
+				} else if(methods.size() > 1){
+					statusLabel.setText("Selection: " + methods.size() + " methods.");
+					ArrayList<Node> sortedMethods = new ArrayList<Node>((int) methods.size());
+					for(Node method : methods){
+						sortedMethods.add(method);
+					}
+					Collections.sort(sortedMethods, new NodeSourceCorrespondenceSorter());
+					StringBuilder text = new StringBuilder();
+					for(Node method : sortedMethods){
+						text.append("\n\n");
+						Node classNode = Common.toQ(method).parent().eval().nodes().one();
+						if(JimpleCommonsPreferences.isCFRCorrespondenceUseOriginalJarsEnabled()){
+							try {
+								File extractedJar = getOrCreateExtractedJar(classNode);
+								try {
+									text.append(decompileMethodFromJar(extractedJar, method));
+								} catch (Exception e) {
+									String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
+									text.append("CFR ERROR: " + qualifiedMethod);
+								}
+							} catch (Exception e) {
+								String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
+								text.append("SEARCH ERROR: " + qualifiedMethod);
+							}
+						} else {
+							try {
+								File compiledClass = getOrCreateCompiledClassFile(classNode);
+								try {
+									text.append(decompileMethodFromClass(compiledClass, method));
+								} catch (Exception e) {
+									String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
+									text.append("CFR ERROR: " + qualifiedMethod);
+								}
+							} catch (Exception e) {
+								String qualifiedMethod = CommonQueries.getQualifiedMethodName(method);
+								text.append("SOOT ERROR: " + qualifiedMethod);
+							}
+						}
+					}
+					text.append("\n\n");
+					setText(text.toString().trim());
+				} else {
+					Node method = methods.one();
+					statusLabel.setText("Selection: " + CommonQueries.getQualifiedMethodName(method));
+					Node classNode = Common.toQ(method).parent().eval().nodes().one();
+					try {
+						if(JimpleCommonsPreferences.isCFRCorrespondenceUseOriginalJarsEnabled()){
+							try {
+								File extractedJar = getOrCreateExtractedJar(classNode);
+								try {
+									setText("\n\n" + decompileMethodFromJar(extractedJar, method) + "\n\n");
+								} catch (Exception e) {
+									setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + ":" + e.getMessage() + "\n\n");
+								}
+							} catch (Exception e) {
+								setText("\n\nSEARCH ERROR: " + CommonQueries.getQualifiedMethodName(method) + ":" + e.getMessage() + "\n\n");
+							}
+						} else {
+							try {
+								File compiledClass = getOrCreateCompiledClassFile(classNode);
+								try {
+									setText("\n\n" + decompileMethodFromClass(compiledClass, method) + "\n\n");
+								} catch (Exception e) {
+									setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedMethodName(method) + ":" + e.getMessage() + "\n\n");
+								}
+							} catch (Exception e) {
+								setText("\n\nSOOT ERROR: " + CommonQueries.getQualifiedMethodName(method) + ":" + e.getMessage() + "\n\n");
+							}
+						}
+					} catch (Exception e) {
+						setText("\n\nERROR: " + CommonQueries.getQualifiedMethodName(method) + "\n\n");
+					}
+				}
+			} else {
+				if(classes.size() == 1){
+					Node classNode = classes.one();
+					statusLabel.setText("Selection: " + CommonQueries.getQualifiedClassName(classNode));
+					if(JimpleCommonsPreferences.isCFRCorrespondenceUseOriginalJarsEnabled()){
+						try {
+							File extractedJar = getOrCreateExtractedJar(classNode);
+							try {
+								setText("\n\n" + decompileClassFromJar(extractedJar, classNode) + "\n\n");
+							} catch (Exception e) {
+								setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
+							}
+						} catch (Exception e) {
+							setText("\n\nSEARCH ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
+						}
+					} else {
+						try {
+							File compiledClass = getOrCreateCompiledClassFile(classNode);
+							try {
+								String classpath = null;
+								SourceCorrespondence sc = (SourceCorrespondence) classNode.getAttr(XCSG.sourceCorrespondence);
+								if(sc != null){
+									IProject project = sc.sourceFile.getProject();
+									classpath = getProjectClasspath(project);
+								}
+								setText("\n\n" + decompileClass(compiledClass, classpath) + "\n\n");
+							} catch (Exception e) {
+								setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
+							}
+						} catch (Exception e) {
+							setText("\n\nSOOT ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
+						}
+					}
+				} else if(classes.size() > 2){
+					setText("");
+					statusLabel.setText("Multiple class selections not supported.");
+					return;
+				} else {
+					setText("");
+					statusLabel.setText("Mixed selection types not supported.");
+					return;
+				}
+			}
 
-		markOccurrences(Common.toQ(variableSelections).union(filteredSelection.nodes(XCSG.Method,XCSG.CallSite)).eval().nodes());
+			markOccurrences(Common.toQ(variableSelections).union(filteredSelection.nodes(XCSG.Method,XCSG.CallSite)).eval().nodes());
+		}
 	}
 	
 	public String getProjectClasspath(IProject project) throws Exception {
@@ -812,29 +909,8 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionListenerView 
 	
 	@Override
 	public void dispose(){
-		try {
-			delete(tempDirectory);
-		} catch (FileNotFoundException e) {
-			// just a best effort...
-		}
+		lastSelectionScope.clear();
 		super.dispose();
 	}
 	
-	/**
-	 * Helper function to recursively delete a file or directory
-	 * @param file
-	 * @throws FileNotFoundException
-	 */
-	private static void delete(File file) throws FileNotFoundException {
-		if(file.exists()) {
-			if (file.isDirectory()) {
-				for (File c : file.listFiles()) {
-					delete(c);
-				}
-			}
-			if (!file.delete()){
-				throw new FileNotFoundException("Failed to delete file: " + file);
-			}
-		}
-	}
 }
