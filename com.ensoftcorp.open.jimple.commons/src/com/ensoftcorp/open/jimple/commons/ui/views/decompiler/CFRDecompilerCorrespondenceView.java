@@ -58,7 +58,7 @@ import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.utilities.DisplayUtils;
 import com.ensoftcorp.open.commons.utilities.NodeSourceCorrespondenceSorter;
 import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
-import com.ensoftcorp.open.commons.utilities.selection.GraphSelectionProviderView;
+import com.ensoftcorp.open.commons.utilities.selection.ExpiringGraphSelectionProviderView;
 import com.ensoftcorp.open.java.commons.analysis.CommonQueries;
 import com.ensoftcorp.open.java.commons.bytecode.JarInspector;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties;
@@ -68,7 +68,7 @@ import com.ensoftcorp.open.jimple.commons.preferences.JimpleCommonsPreferences;
 import com.ensoftcorp.open.jimple.commons.soot.Compilation;
 import com.ensoftcorp.open.jimple.commons.soot.SootConversionException;
 
-public class CFRDecompilerCorrespondenceView extends GraphSelectionProviderView {
+public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProviderView {
 	
 	private static final String ID = "com.ensoftcorp.open.jimple.commons.ui.views.decompiler";
 	
@@ -153,6 +153,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionProviderView 
 								
 								// check if this selection could be used to drive a selection provider
 								if(isGraphSelectionProviderEnabled()) {
+									processing = true;
 									Display.getDefault().syncExec(new Runnable() {
 										@Override
 										public void run() {
@@ -190,6 +191,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionProviderView 
 											}
 										}
 									});
+									processing = false;
 								}
 							}
 						}
@@ -208,6 +210,7 @@ public class CFRDecompilerCorrespondenceView extends GraphSelectionProviderView 
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		Frame frame = SWT_AWT.new_Frame(composite);
 		frame.add(scrollPanel);
+		frame.setFocusable(false);
 	
 		statusLabel = new Label(parent, SWT.NONE);
 		statusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
