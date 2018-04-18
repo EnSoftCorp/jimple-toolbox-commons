@@ -30,3 +30,4 @@ Export-Package: com.ensoftcorp.open.jimple.commons.analysis,
  com.ensoftcorp.open.jimple.commons.soot,
  com.ensoftcorp.open.jimple.commons.soot.transforms,
  com.ensoftcorp.open.jimple.commons.wishful
+Automatic-Module-Name: com.ensoftcorp.open.jimple.commons
