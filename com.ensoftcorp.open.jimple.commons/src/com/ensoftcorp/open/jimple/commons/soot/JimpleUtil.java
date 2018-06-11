@@ -2,6 +2,8 @@ package com.ensoftcorp.open.jimple.commons.soot;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -16,12 +18,18 @@ import javax.xml.xpath.XPathFactory;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
+import org.eclipse.core.resources.IProject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.ensoftcorp.abp.common.util.JimpleUtil.JimpleSource;
+import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
+import com.ensoftcorp.open.java.commons.project.ProjectJarProperties;
+import com.ensoftcorp.open.java.commons.project.ProjectJarProperties.Jar;
+import com.ensoftcorp.open.jimple.commons.log.Log;
+import com.ensoftcorp.open.jimple.commons.project.ProjectJarJimpleProperties;
 
 public class JimpleUtil {
 
@@ -86,5 +94,34 @@ public class JimpleUtil {
 		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "3");
 		jimpleSourceFile.getParentFile().mkdirs();
 		transformer.transform(new DOMSource(jimpleSource), new StreamResult(new FileOutputStream(jimpleSourceFile)));
+	}
+	
+	public static void testRecompilation(String project) throws Exception {
+		testRecompilation(WorkspaceUtils.getProject(project));
+	}
+	
+	public static void testRecompilation(IProject project) throws Exception {
+		String task = "Verifying Jimple compilation for " + project.getName();
+		Log.info(task);
+		
+		for(Jar app : ProjectJarProperties.getApplicationJars(project)) {
+			try {
+				String jimplePath = ProjectJarJimpleProperties.getJarJimplePath(app);
+				File jimpleDirectory = project.getFolder(jimplePath).getLocation().toFile();
+				boolean allowPhantomReferences = ProjectJarJimpleProperties.getJarJimplePhantomReferencesConfiguration(app);
+				boolean useOriginalNames = ProjectJarJimpleProperties.getJarJimpleUseOriginalNamesConfiguration(app);
+				List<File> libraries = new ArrayList<File>();
+				for(Jar lib : ProjectJarProperties.getLibraryJars(project)) {
+					libraries.add(lib.getFile());
+				}
+				File tmpOutput = File.createTempFile(app.getName(), ".jar");
+				boolean outputBytecode = true;
+				boolean jarify = true;
+				Compilation.compile(project, jimpleDirectory, tmpOutput, allowPhantomReferences, useOriginalNames, libraries, outputBytecode, jarify);
+				Log.info("Verification complete (" + tmpOutput.getAbsolutePath() + ").");
+			} catch (Throwable t) {
+				Log.error("Fail to recompile jimple", t);
+			}
+		}
 	}
 }
