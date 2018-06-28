@@ -95,99 +95,104 @@ public class Decompilation {
 		if(!outputDirectory.exists()){
 			outputDirectory.mkdirs();
 		}
-		ConfigManager.getInstance().startTempConfig();
+		
+		ArrayList<String> argList = new ArrayList<String>();
+		argList.add("-src-prec"); argList.add("class");
+		argList.add("--xml-attributes");
+		argList.add("-output-format"); argList.add("jimple");
+		argList.add("-cp"); argList.add(classpath);
+		if(allowPhantomReferences){
+			argList.add("-allow-phantom-refs");
+		}
+		argList.add("-output-dir"); argList.add(outputDirectory.getAbsolutePath());
+		argList.add("-process-dir"); argList.add(jar.getAbsolutePath());
+		argList.add("-include-all");
+		
+		// use original names
+		if(useOriginalNames){
+			argList.add("-p"); argList.add("jb"); argList.add("use-original-names:true");
+		} else {
+			argList.add("-p"); argList.add("jb"); argList.add("use-original-names:false");
+		}
+		
+		// be deterministic about variable name assignment
+		argList.add("--p");argList.add("jb");argList.add("stabilize-local-names:true");
+		
+		// disable the prefixing of "$" on stack variables
+		argList.add("--p");argList.add("jb.lns");argList.add("prefix-stack-locals:false");
+		
+		String[] sootArgs = argList.toArray(new String[argList.size()]);
+		
 		try {
+			ConfigManager.getInstance().startTempConfig();
 			G.reset();
-
-			ArrayList<String> argList = new ArrayList<String>();
-			argList.add("-src-prec"); argList.add("class");
-			argList.add("--xml-attributes");
-			argList.add("-output-format"); argList.add("jimple");
-			argList.add("-cp"); argList.add(classpath);
-			if(allowPhantomReferences){
-				argList.add("-allow-phantom-refs");
+			
+			// run soot
+			// TODO: should we be using the soot scene?
+//			soot.Main.v().main(sootArgs);
+			soot.Main.main(sootArgs);
+			
+			// if this jar was contained in a project and is being written into a project, then write a jimplesource.xml file as well
+			Map<File,IProject> projectDirectories = new HashMap<File,IProject>();
+			for(IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()){
+				if(project.isAccessible() && project.isOpen()){
+					projectDirectories.put(new File(project.getLocation().toOSString()), project);
+				}
 			}
-			argList.add("-output-dir"); argList.add(outputDirectory.getAbsolutePath());
-			argList.add("-process-dir"); argList.add(jar.getAbsolutePath());
-			argList.add("-include-all");
-			
-			// use original names
-			if(useOriginalNames){
-				argList.add("-p"); argList.add("jb"); argList.add("use-original-names:true");
-			} else {
-				argList.add("-p"); argList.add("jb"); argList.add("use-original-names:false");
+			IFile jarFile = null;
+			File jarParent = jar.getParentFile();
+			String jarRelativePath = jar.getName();
+			while(jarParent != null){
+				if(projectDirectories.keySet().contains(jarParent)){
+					IProject project = projectDirectories.get(jarParent);
+					jarFile = project.getFile(jarRelativePath);
+					break;
+				} else {
+					jarRelativePath = jarParent.getName() + "/" + jarRelativePath;
+					jarParent = jarParent.getParentFile();
+				}
+			}
+			IFolder outputDirectoryFolder = null;
+			File outputDirectoryParent = outputDirectory.getParentFile();
+			String outputDirectoryRelativePath = outputDirectory.getName();
+			while(outputDirectoryParent != null){
+				if(projectDirectories.keySet().contains(outputDirectoryParent)){
+					IProject project = projectDirectories.get(outputDirectoryParent);
+					outputDirectoryFolder = project.getFolder(outputDirectoryRelativePath);
+					break;
+				} else {
+					outputDirectoryRelativePath = outputDirectoryParent.getName() + "/" + outputDirectoryRelativePath;
+					outputDirectoryParent = outputDirectoryParent.getParentFile();
+				}
+			}
+			if(jarFile != null && outputDirectoryFolder != null){
+				try {
+					JimpleUtil.writeHeaderFile(JimpleSource.JAR, jarFile, outputDirectoryFolder);
+				} catch (Exception e) {
+					Log.warning("Could not write jimplesource.xml header file.", e);
+				}
 			}
 			
-			// be deterministic about variable name assignment
-			argList.add("--p");argList.add("jb");argList.add("stabilize-local-names:true");
-			
-			// disable the prefixing of "$" on stack variables
-			argList.add("--p");argList.add("jb.lns");argList.add("prefix-stack-locals:false");
-			
-			String[] args = argList.toArray(new String[argList.size()]);
-			
-			try {
-				soot.Main.main(args);
-				
-				// if this jar was contained in a project and is being written into a project, then write a jimplesource.xml file as well
-				Map<File,IProject> projectDirectories = new HashMap<File,IProject>();
-				for(IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()){
-					if(project.isAccessible() && project.isOpen()){
-						projectDirectories.put(new File(project.getLocation().toOSString()), project);
-					}
+			// warn about any phantom references
+			Chain<SootClass> phantomClasses = soot.Scene.v().getPhantomClasses();
+			if (!phantomClasses.isEmpty()) {
+				TreeSet<String> missingClasses = new TreeSet<String>();
+				for (SootClass sootClass : phantomClasses) {
+					missingClasses.add(sootClass.toString());
 				}
-				IFile jarFile = null;
-				File jarParent = jar.getParentFile();
-				String jarRelativePath = jar.getName();
-				while(jarParent != null){
-					if(projectDirectories.keySet().contains(jarParent)){
-						IProject project = projectDirectories.get(jarParent);
-						jarFile = project.getFile(jarRelativePath);
-						break;
-					} else {
-						jarRelativePath = jarParent.getName() + "/" + jarRelativePath;
-						jarParent = jarParent.getParentFile();
-					}
+				StringBuilder message = new StringBuilder();
+				message.append("Some classes were referenced, but could not be found.\n\n");
+				for (String sootClass : missingClasses) {
+					message.append(sootClass);
+					message.append("\n");
 				}
-				IFolder outputDirectoryFolder = null;
-				File outputDirectoryParent = outputDirectory.getParentFile();
-				String outputDirectoryRelativePath = outputDirectory.getName();
-				while(outputDirectoryParent != null){
-					if(projectDirectories.keySet().contains(outputDirectoryParent)){
-						IProject project = projectDirectories.get(outputDirectoryParent);
-						outputDirectoryFolder = project.getFolder(outputDirectoryRelativePath);
-						break;
-					} else {
-						outputDirectoryRelativePath = outputDirectoryParent.getName() + "/" + outputDirectoryRelativePath;
-						outputDirectoryParent = outputDirectoryParent.getParentFile();
-					}
-				}
-				if(jarFile != null && outputDirectoryFolder != null){
-					try {
-						JimpleUtil.writeHeaderFile(JimpleSource.JAR, jarFile, outputDirectoryFolder);
-					} catch (Exception e) {
-						Log.warning("Could not write jimplesource.xml header file.", e);
-					}
-				}
-				
-				// warn about any phantom references
-				Chain<SootClass> phantomClasses = soot.Scene.v().getPhantomClasses();
-				if (!phantomClasses.isEmpty()) {
-					TreeSet<String> missingClasses = new TreeSet<String>();
-					for (SootClass sootClass : phantomClasses) {
-						missingClasses.add(sootClass.toString());
-					}
-					StringBuilder message = new StringBuilder();
-					message.append("Some classes were referenced, but could not be found.\n\n");
-					for (String sootClass : missingClasses) {
-						message.append(sootClass);
-						message.append("\n");
-					}
-					Log.warning(message.toString());
-				}
-			} catch (RuntimeException e) {
-				throw new SootConversionException(e);
+				Log.warning(message.toString());
 			}
+			
+			// TODO: organize the jimple files into packages
+//			com.ensoftcorp.abp.util.ABPFileUtils.organizeFilesinPackages(new File(outputDirectory));
+		} catch (Throwable t) {
+			throw new SootConversionException(t);
 		} finally {
 			// restore the saved config (even if there was an error)
             ConfigManager.getInstance().endTempConfig();

@@ -166,7 +166,7 @@ public class Compilation {
 //      argList.add("-keep-bytecode-offset");
 //      argList.add("-keep-line-number");
 		
-		// need to specifically enalbe using ASM over deprecated Jasmine library
+		// need to specifically enable using ASM over deprecated Jasmine library
 		argList.add("-asm-backend");
 		
 		// output classes to a jar file
@@ -181,10 +181,28 @@ public class Compilation {
 			G.reset();
 			
 			// run soot
-			soot.Main.v().run(sootArgs);
+			// TODO: should we be using the soot scene?
+//			soot.Main.v().main(sootArgs);
+			soot.Main.main(sootArgs);
 			
 			// debug
 //			Log.info("Compiled Jimple to Jar: " + outputJar.getCanonicalPath());
+			
+			// warn about any phantom references
+			Chain<SootClass> phantomClasses = soot.Scene.v().getPhantomClasses();
+	        if (!phantomClasses.isEmpty()) {
+	            TreeSet<String> missingClasses = new TreeSet<String>();
+	            for (SootClass sootClass : phantomClasses) {
+	                    missingClasses.add(sootClass.toString());
+	            }
+	            StringBuilder message = new StringBuilder();
+	            message.append("When compiling Jimple, some classes were referenced that could not be found.\n\n");
+	            for (String sootClass : missingClasses) {
+	                    message.append(sootClass);
+	                    message.append("\n");
+	            }
+	            Log.warning(message.toString());
+	        }
 		} catch (Throwable t){
 			String message = "An error occurred compiling Jimple to class files.";
 			if(!outputBytecode){
@@ -197,22 +215,6 @@ public class Compilation {
 			// restore the saved config (even if there was an error)
             ConfigManager.getInstance().endTempConfig();
 		}
-
-		// warn about any phantom references
-		Chain<SootClass> phantomClasses = soot.Scene.v().getPhantomClasses();
-        if (!phantomClasses.isEmpty()) {
-            TreeSet<String> missingClasses = new TreeSet<String>();
-            for (SootClass sootClass : phantomClasses) {
-                    missingClasses.add(sootClass.toString());
-            }
-            StringBuilder message = new StringBuilder();
-            message.append("When compiling Jimple, some classes were referenced that could not be found.\n\n");
-            for (String sootClass : missingClasses) {
-                    message.append(sootClass);
-                    message.append("\n");
-            }
-            Log.warning(message.toString());
-        }
 	}
 
 	// helper method for locating and adding the jar locations to the classpath

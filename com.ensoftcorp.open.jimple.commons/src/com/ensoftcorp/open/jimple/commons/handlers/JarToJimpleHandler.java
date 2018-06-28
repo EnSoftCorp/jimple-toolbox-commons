@@ -17,6 +17,7 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
+import com.ensoftcorp.open.commons.utilities.DisplayUtils;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties.Jar;
 import com.ensoftcorp.open.jimple.commons.handlers.JarToJimpleConfigurationsDialog.JimpleGenerationConfigurations;
@@ -87,9 +88,11 @@ public class JarToJimpleHandler extends AbstractHandler {
 				throw new IllegalArgumentException();
 			}
 		} catch (IllegalArgumentException e) {
-			Log.warning("Selection must be a jar file.", e);
-		} catch (Exception e) {
-			Log.error("Error converting Jar to Jimple", e);
+			Log.warning("Selection must be a Jar file.", e);
+			DisplayUtils.showError("Selection must be a Jar file.");
+		} catch (Throwable t) {
+			Log.error("Error converting Jar to Jimple", t);
+			DisplayUtils.showError(t, "Error converting Jar to Jimple");
 		}
 		
 		return null;
