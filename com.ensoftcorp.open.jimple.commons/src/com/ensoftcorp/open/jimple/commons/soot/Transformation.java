@@ -118,11 +118,16 @@ public class Transformation {
 		
 		// use original names
 		if(useOriginalNames){
-			argList.add("-p"); argList.add("jb"); argList.add("use-original-names");
+			argList.add("-p"); argList.add("jb"); argList.add("use-original-names:true");
+		} else {
+			argList.add("-p"); argList.add("jb"); argList.add("use-original-names:false");
 		}
 		
 		// be deterministic about variable name assignment
 		argList.add("--p");argList.add("jb");argList.add("stabilize-local-names:true");
+		
+		// disable the prefixing of "$" on stack variables
+		argList.add("--p");argList.add("jb.lns");argList.add("prefix-stack-locals:false");
 		
 		// output class or jimple files (jimple files are good for debugging)
 		argList.add("-output-format"); argList.add(outputBytecode ? "class" : "jimple");

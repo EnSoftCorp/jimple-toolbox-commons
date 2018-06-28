@@ -114,8 +114,15 @@ public class Decompilation {
 			// use original names
 			if(useOriginalNames){
 				argList.add("-p"); argList.add("jb"); argList.add("use-original-names:true");
+			} else {
+				argList.add("-p"); argList.add("jb"); argList.add("use-original-names:false");
 			}
+			
+			// be deterministic about variable name assignment
 			argList.add("--p");argList.add("jb");argList.add("stabilize-local-names:true");
+			
+			// disable the prefixing of "$" on stack variables
+			argList.add("--p");argList.add("jb.lns");argList.add("prefix-stack-locals:false");
 			
 			String[] args = argList.toArray(new String[argList.size()]);
 			

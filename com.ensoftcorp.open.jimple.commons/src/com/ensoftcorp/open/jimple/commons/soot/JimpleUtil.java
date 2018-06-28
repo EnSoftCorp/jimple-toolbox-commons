@@ -31,6 +31,8 @@ import com.ensoftcorp.open.java.commons.project.ProjectJarProperties.Jar;
 import com.ensoftcorp.open.jimple.commons.log.Log;
 import com.ensoftcorp.open.jimple.commons.project.ProjectJarJimpleProperties;
 
+import soot.Transform;
+
 public class JimpleUtil {
 
 	private static final String FILENAME = "jimplesource.xml";
@@ -121,6 +123,33 @@ public class JimpleUtil {
 				Log.info("Verification complete (" + tmpOutput.getAbsolutePath() + ").");
 			} catch (Throwable t) {
 				Log.error("Fail to recompile jimple", t);
+			}
+		}
+	}
+	
+	public static void testNullTransformation(String project) throws Exception {
+		testRecompilation(WorkspaceUtils.getProject(project));
+	}
+	
+	public static void testNullTransformation(IProject project) throws Exception {
+		String task = "Verifying Soot null transformation for " + project.getName();
+		Log.info(task);
+		
+		for(Jar app : ProjectJarProperties.getApplicationJars(project)) {
+			try {
+				boolean allowPhantomReferences = ProjectJarJimpleProperties.getJarJimplePhantomReferencesConfiguration(app);
+				boolean useOriginalNames = ProjectJarJimpleProperties.getJarJimpleUseOriginalNamesConfiguration(app);
+				List<File> libraries = new ArrayList<File>();
+				for(Jar lib : ProjectJarProperties.getLibraryJars(project)) {
+					libraries.add(lib.getFile());
+				}
+				File tmpOutput = File.createTempFile(app.getName(), ".jar");
+				boolean outputBytecode = true;
+				Transformation.transform(app.getFile(), tmpOutput, libraries, allowPhantomReferences, useOriginalNames, outputBytecode, new Transform[] {});
+				
+				Log.info("Verification complete (" + tmpOutput.getAbsolutePath() + ").");
+			} catch (Throwable t) {
+				Log.error("Fail to perfrom Soot null transformation", t);
 			}
 		}
 	}

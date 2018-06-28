@@ -146,11 +146,18 @@ public class Compilation {
 		// output class or jimple files
 		argList.add("-output-format"); argList.add(outputBytecode ? "class" : "jimple");
 		
-		// try to preserve as much of the original implementation as possible
+		// use original names
 		if(useOriginalNames){
 			argList.add("-p"); argList.add("jb"); argList.add("use-original-names:true");
+		} else {
+			argList.add("-p"); argList.add("jb"); argList.add("use-original-names:false");
 		}
+		
+		// be deterministic about variable name assignment
 		argList.add("--p");argList.add("jb");argList.add("stabilize-local-names:true");
+		
+		// disable the prefixing of "$" on stack variables
+		argList.add("--p");argList.add("jb.lns");argList.add("prefix-stack-locals:false");
         
         // this may be used to forcible generate potentially invalid bytecode
 //      argList.add("--p");argList.add("jb.tr");argList.add("ignore-wrong-staticness:true");
