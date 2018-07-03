@@ -156,8 +156,9 @@ public class Compilation {
 		// be deterministic about variable name assignment
 		argList.add("--p");argList.add("jb");argList.add("stabilize-local-names:true");
 		
+		// TODO: don't enable this until official release
 		// disable the prefixing of "$" on stack variables
-		argList.add("--p");argList.add("jb.lns");argList.add("prefix-stack-locals:false");
+//		argList.add("--p");argList.add("jb.lns");argList.add("prefix-stack-locals:false");
         
         // this may be used to forcible generate potentially invalid bytecode
 //      argList.add("--p");argList.add("jb.tr");argList.add("ignore-wrong-staticness:true");
