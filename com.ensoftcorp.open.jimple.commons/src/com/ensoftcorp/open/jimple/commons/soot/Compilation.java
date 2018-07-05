@@ -102,6 +102,11 @@ public class Compilation {
 		
 		// locate classpath jars
 		StringBuilder classpath = new StringBuilder();
+		
+		// add the jimple directory to the classpath
+		classpath.append(inputDirectory.getCanonicalPath());
+		classpath.append(File.pathSeparator);
+		
 		addJarsToClasspath(JavaCore.create(project), classpath);
 		
 		// locate classpath jars for project dependencies
