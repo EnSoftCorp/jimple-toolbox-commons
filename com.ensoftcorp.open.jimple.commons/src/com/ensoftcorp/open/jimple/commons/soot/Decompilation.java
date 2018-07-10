@@ -130,8 +130,7 @@ public class Decompilation {
 			
 			// run soot
 			// TODO: should we be using the soot scene?
-//			soot.Main.v().main(sootArgs);
-			soot.Main.main(sootArgs);
+			soot.Main.v().run(sootArgs);
 			
 			// if this jar was contained in a project and is being written into a project, then write a jimplesource.xml file as well
 			Map<File,IProject> projectDirectories = new HashMap<File,IProject>();
@@ -190,8 +189,6 @@ public class Decompilation {
 				Log.warning(message.toString());
 			}
 			
-			// TODO: organize the jimple files into packages
-//			com.ensoftcorp.abp.util.ABPFileUtils.organizeFilesinPackages(new File(outputDirectory));
 		} catch (Throwable t) {
 			throw new SootConversionException(t);
 		} finally {
