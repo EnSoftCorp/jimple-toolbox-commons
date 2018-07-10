@@ -79,19 +79,21 @@ public class Decompilation {
 			classpath.append(entry.getPath().toFile().getCanonicalPath());
 			classpath.append(File.pathSeparator);
 		}
-		decompile(jar, outputDirectory, classpath.toString(), allowPhantomReferences, useOriginalNames);
+		decompile(jar, jar, outputDirectory, classpath.toString(), allowPhantomReferences, useOriginalNames);
 	}
 	
 	/**
 	 * Converts a jar file to jimple
-	 * @param projectDirectory
 	 * @param jar
+	 * @param processDirectory: For processing jar, the first parameter jar can be specified here as well.
+	 *                          There are instances when we can provide a jar and also the extracted classes in the jar
+	 *                          In this case, the root of the classes directory can be specified in this argument
 	 * @param outputDirectory
 	 * @param classpath
 	 * @throws SootConversionException
 	 * @throws IOException
 	 */
-	public static void decompile(File jar, File outputDirectory, String classpath, boolean allowPhantomReferences, boolean useOriginalNames) throws SootConversionException, IOException {
+	public static void decompile(File jar, File processDir, File outputDirectory, String classpath, boolean allowPhantomReferences, boolean useOriginalNames) throws SootConversionException, IOException {
 		if(!outputDirectory.exists()){
 			outputDirectory.mkdirs();
 		}
@@ -105,7 +107,7 @@ public class Decompilation {
 			argList.add("-allow-phantom-refs");
 		}
 		argList.add("-output-dir"); argList.add(outputDirectory.getAbsolutePath());
-		argList.add("-process-dir"); argList.add(jar.getAbsolutePath());
+		argList.add("-process-dir"); argList.add(processDir.getAbsolutePath());
 		argList.add("-include-all");
 		
 		// use original names
