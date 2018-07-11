@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.jar.JarException;
+import java.util.jar.Manifest;
 
 import javax.swing.ScrollPaneConstants;
 
@@ -736,7 +738,7 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		}
 	}
 	
-	private File getOrCreateExtractedJar(Node classNode) throws FileNotFoundException {
+	private File getOrCreateExtractedJar(Node classNode) throws JarException, IOException {
 		if(extractedJarsDirectory == null){
 			throw new FileNotFoundException("Could not access temporary Jar extraction directory.");
 		} else {
@@ -785,6 +787,11 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 				
 				File extractedJarDirectory = new File(extractedJarsDirectory.getAbsolutePath() + File.separator + jarFile.getName());
 				if(extractedJarDirectory.exists()){
+					File rootClassDir = getRootClassDir(jarFile, extractedJarDirectory);						
+					if (rootClassDir != null) {
+						return rootClassDir;
+					}
+
 					return extractedJarDirectory;
 				} else {
 					try {
@@ -801,6 +808,12 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 								writer.close();
 							}
 						}
+						
+						File rootClassDir = getRootClassDir(jarFile, extractedJarDirectory);						
+						if (rootClassDir != null) {
+							return rootClassDir;
+						}
+						
 						return extractedJarDirectory;
 					} catch (Exception e){
 						throw new RuntimeException("Failed to extract library Jar contents for " + jarFile.getAbsolutePath());
@@ -808,6 +821,24 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 				}
 			}
 		}
+	}
+
+	private File getRootClassDir(File jarFile, File extractedJarDirectory) throws JarException, IOException {
+		//Parse the Manifest and look for places where a new root for class files can be specified. 
+		//Right now we only check for "Spring-Boot-Classes" attributes when Spring framework is used.
+		Manifest manifest = new JarInspector(jarFile).getManifest();
+		String rootClassDir=null;
+		if (manifest != null) {
+			rootClassDir = manifest.getMainAttributes().getValue("Spring-Boot-Classes");
+		}
+		
+		if (rootClassDir != null) {
+			File rootClassDirFile = new File (extractedJarDirectory, rootClassDir);
+			if (rootClassDirFile.exists()) {
+				return rootClassDirFile;
+			}
+		}
+		return null;
 	}
 	
 	private String decompileClassFromJar(File extractedJar, Node classNode){
