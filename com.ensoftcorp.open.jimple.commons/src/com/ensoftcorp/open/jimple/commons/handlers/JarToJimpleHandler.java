@@ -17,6 +17,7 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
+import com.ensoftcorp.abp.common.util.ABPFileUtils;
 import com.ensoftcorp.open.commons.utilities.DisplayUtils;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties.Jar;
@@ -72,6 +73,9 @@ public class JarToJimpleHandler extends AbstractHandler {
 									ProjectJarJimpleProperties.setJimpleProperties(new ProjectJarJimpleProperties(jar, outputDirectoryFolder, configuration.isAllowPhantomReferencesEnabled(), configuration.isUseOriginalNamesEnabled()));
 								}
 							}
+							
+							//Organize the files
+							ABPFileUtils.organizeFilesinPackages(outputDirectory);
 							
 							// refresh project contents
 							try {
