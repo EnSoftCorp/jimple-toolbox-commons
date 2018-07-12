@@ -77,11 +77,13 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 	private static File tempDirectory = null;
 	private static File extractedJarsDirectory = null;
 	private static File compiledClassesDirectory = null;
+	private JarInspector inspector = null;
 	
 	private Label statusLabel;
 	private RSyntaxTextArea textArea;
 	private boolean processing = false;
 	private AtlasSet<Node> lastSelectionScope = new AtlasHashSet<Node>();
+
 	
 	public CFRDecompilerCorrespondenceView() {
 		setPartName("CFR Decompiler Correspondence");
@@ -787,17 +789,12 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 				
 				File extractedJarDirectory = new File(extractedJarsDirectory.getAbsolutePath() + File.separator + jarFile.getName());
 				if(extractedJarDirectory.exists()){
-					File rootClassDir = getRootClassDir(jarFile, extractedJarDirectory);						
-					if (rootClassDir != null) {
-						return rootClassDir;
-					}
-
 					return extractedJarDirectory;
 				} else {
 					try {
 						statusLabel.setText("Extracting " + jarFile.getName() + " contents...");
 						extractedJarDirectory.mkdirs();
-						JarInspector inspector = new JarInspector(jarFile);
+						inspector = new JarInspector(jarFile);
 						for(String entry : inspector.getJarEntrySet()){
 							byte[] bytes = inspector.extractEntry(entry);
 							File path = new File(extractedJarDirectory.getAbsolutePath() + File.separator + entry.replace("/", File.separator));
@@ -808,12 +805,6 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 								writer.close();
 							}
 						}
-						
-						File rootClassDir = getRootClassDir(jarFile, extractedJarDirectory);						
-						if (rootClassDir != null) {
-							return rootClassDir;
-						}
-						
 						return extractedJarDirectory;
 					} catch (Exception e){
 						throw new RuntimeException("Failed to extract library Jar contents for " + jarFile.getAbsolutePath());
@@ -823,10 +814,13 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		}
 	}
 
-	private File getRootClassDir(File jarFile, File extractedJarDirectory) throws JarException, IOException {
-		//Parse the Manifest and look for places where a new root for class files can be specified. 
-		//Right now we only check for "Spring-Boot-Classes" attributes when Spring framework is used.
-		Manifest manifest = new JarInspector(jarFile).getManifest();
+	//Parse the Manifest and look for places where a new root for class files can be specified. 
+	//Right now we only check for "Spring-Boot-Classes" attributes when Spring framework is used.
+	private File getRootClassDir(File extractedJarDirectory) throws JarException, IOException {
+		if (inspector == null) {
+			return null;
+		}
+		Manifest manifest = inspector.getManifest();
 		String rootClassDir=null;
 		if (manifest != null) {
 			rootClassDir = manifest.getMainAttributes().getValue("Spring-Boot-Classes");
@@ -841,30 +835,39 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		return null;
 	}
 	
-	private String decompileClassFromJar(File extractedJar, Node classNode){
+	private String decompileClassFromJar(File extractedJar, Node classNode) throws JarException, IOException{
 		if(!classNode.taggedWith(XCSG.Classifier)){
 			throw new IllegalArgumentException("Parameter methodNode must be an XCSG.Classifier.");
 		}
 		String qualifiedClass = CommonQueries.getQualifiedClassName(classNode);
 		File classFile = new File(extractedJar.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
 		if(!classFile.exists()){
-			return "Could not find corresponding class file: " + classFile.getAbsolutePath();
-		} else {
-			String classpath = null;
-			SourceCorrespondence sc = (SourceCorrespondence) classNode.getAttr(XCSG.sourceCorrespondence);
-			if(sc != null){
-				IProject project = sc.sourceFile.getProject();
-				try {
-					classpath = getProjectClasspath(project);
-				} catch (Exception e) {
-					Log.warning("Could not recover project classpath for " + project.getName());
+			//In certain cases (like Spring framework), the root for the class files are located inside a subdirectory in jar that is specified
+			//in the manifest. We need to check for that as well. 
+			File rootClassDir = getRootClassDir(extractedJar);
+			if (rootClassDir != null) {
+				classFile = new File(rootClassDir.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
+				if(!classFile.exists()){
+					return "Could not find corresponding class file: " + classFile.getAbsolutePath();
 				}
+			}else {
+				return "Could not find corresponding class file: " + classFile.getAbsolutePath();
 			}
-			return decompileClass(classFile, classpath);
 		}
+		String classpath = null;
+		SourceCorrespondence sc = (SourceCorrespondence) classNode.getAttr(XCSG.sourceCorrespondence);
+		if(sc != null){
+			IProject project = sc.sourceFile.getProject();
+			try {
+				classpath = getProjectClasspath(project);
+			} catch (Exception e) {
+				Log.warning("Could not recover project classpath for " + project.getName());
+			}
+		}
+		return decompileClass(classFile, classpath);
 	}
 	
-	private String decompileMethodFromJar(File extractedJar, Node methodNode){
+	private String decompileMethodFromJar(File extractedJar, Node methodNode) throws JarException, IOException{
 		if(!methodNode.taggedWith(XCSG.Method)){
 			throw new IllegalArgumentException("Parameter methodNode must be an XCSG.Method.");
 		}
@@ -875,10 +878,21 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		String qualifiedClass = CommonQueries.getQualifiedClassName(classNode);
 		File classFile = new File(extractedJar.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
 		if(!classFile.exists()){
-			return "Could not find corresponding class file: " + classFile.getAbsolutePath();
-		} else {
-			return decompileMethodFromClass(classFile, methodNode);
+			//In certain cases (like Spring framework), the root for the class files are located inside a subdirectory in jar that is specified
+			//in the manifest. We need to check for that as well. 
+
+			File rootClassDir = getRootClassDir(extractedJar);
+			if (rootClassDir != null) {
+				classFile = new File(rootClassDir.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
+				if(!classFile.exists()){
+					return "Could not find corresponding class file: " + classFile.getAbsolutePath();
+				}
+			}else {
+				return "Could not find corresponding class file: " + classFile.getAbsolutePath();
+			}
 		}
+		
+		return decompileMethodFromClass(classFile, methodNode);
 	}
 	
 	private String decompileClass(File classFile, String classpath){
