@@ -131,7 +131,6 @@ public class Decompilation {
 			G.reset();
 			
 			// run soot
-			// TODO: should we be using the soot scene?
 			soot.Main.v().run(sootArgs);
 			
 			// if this jar was contained in a project and is being written into a project, then write a jimplesource.xml file as well

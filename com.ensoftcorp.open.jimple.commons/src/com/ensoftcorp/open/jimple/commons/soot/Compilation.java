@@ -187,9 +187,7 @@ public class Compilation {
 			G.reset();
 			
 			// run soot
-			// TODO: should we be using the soot scene?
-//			soot.Main.v().main(sootArgs);
-			soot.Main.main(sootArgs);
+			soot.Main.v().run(sootArgs);
 			
 			// debug
 //			Log.info("Compiled Jimple to Jar: " + outputJar.getCanonicalPath());
