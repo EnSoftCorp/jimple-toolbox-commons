@@ -143,6 +143,8 @@ public class Transformation {
 		// need to specifically enalbe using ASM over deprecated Jasmine library
 		argList.add("-asm-backend");
 		
+		argList.add("--java-version"); argList.add("1.8");
+		
 		// output classes to a jar file
 		argList.add("-output-dir"); argList.add(outputJar.getCanonicalPath()); argList.add("-output-jar");
 		
