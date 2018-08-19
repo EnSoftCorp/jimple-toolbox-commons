@@ -913,7 +913,7 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 			throw new IllegalArgumentException("Parameter methodNode must not be a constructor or initializer method.");
 		}
 		String methodName = methodNode.getAttr(XCSG.name).toString();
-		String[] args = new String[]{classFile.getAbsolutePath(), methodName, "--silent"};
+		String[] args = new String[]{classFile.getAbsolutePath(), "--methodname", methodName, "--silent"};
 		return runCFR(args);
 	}
 
