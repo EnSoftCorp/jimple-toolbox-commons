@@ -24,11 +24,14 @@ import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.graph.operation.ForwardGraph;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
+import com.ensoftcorp.atlas.core.db.set.AtlasNodeHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.db.set.SingletonAtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.utilities.NodeSourceCorrespondenceSorter;
+import com.ensoftcorp.open.commons.xcsg.Toolbox;
+import com.ensoftcorp.open.commons.xcsg.XCSG_Extension;
 import com.ensoftcorp.open.jimple.commons.log.Log;
 
 /**
@@ -57,41 +60,39 @@ public class DecompiledLoopIdentification implements Runnable {
 	}
 	
 	public static interface CFGNode {
-		
-		/**
-		 * Tag applied to loop header CFG node
-		 * 
-		 * Note: This is a now legacy alias to XCSG.Loop
-		 */
-		@Deprecated
-		public static final String LOOP_HEADER = XCSG.Loop;
 
 		/**
 		 * Tag applied to loop reentry CFG node
 		 */
+		@XCSG_Extension
 		public static final String LOOP_REENTRY_NODE = "LOOP_REENTRY_NODE";
 
 		/**
 		 * Tag applied to irreducible loop headers
 		 */
+		@XCSG_Extension
 		public static final String IRREDUCIBLE_LOOP = "IRREDUCIBLE_LOOP";
 
 		/**
 		 * Tag applied to natural loop headers (a LOOP_HEADER not tagged
 		 * IRREDUCIBLE_LOOP).
 		 */
+		@XCSG_Extension
 		public static final String NATURAL_LOOP = "NATURAL_LOOP";
 
 		/**
 		 * Integer attribute identifier, matches the LOOP_HEADER_ID for the
 		 * innermost loop header of this node.
 		 */
+		@XCSG_Extension
 		public static final String LOOP_MEMBER_ID = "LOOP_MEMBER_ID";
 
 		/**
 		 * Integer attribute identifier for this loop header.
 		 */
+		@XCSG_Extension
 		public static final String LOOP_HEADER_ID = "LOOP_HEADER_ID";
+		
 	}
 
 	public static interface CFGEdge {
@@ -99,21 +100,15 @@ public class DecompiledLoopIdentification implements Runnable {
 		 * Tag for ControlFlow_Edge indicating a loop re-entry. Also called a
 		 * "cross edge".
 		 */
+		@XCSG_Extension
 		public static final String LOOP_REENTRY_EDGE = "LOOP_REENTRY_EDGE";
-
-		/**
-		 * Tag for loop back edges
-		 * 
-		 * Note: This is a now legacy alias to XCSG.ControlFlowBackEdge
-		 */
-		@Deprecated
-		public static final String LOOP_BACK_EDGE = XCSG.ControlFlowBackEdge;
 		
 		/**
 		 * Tag for interprocedural loop child edges
 		 * 
 		 * Note: This may move to XCSG later.
 		 */
+		@XCSG_Extension
 		public static final String INTERPROCEDURAL_LOOP_CHILD = "INTERPROCEDURAL_LOOP_CHILD";
 
 	}
@@ -139,8 +134,8 @@ public class DecompiledLoopIdentification implements Runnable {
 		try {
 			// find the work to be done
 			Q u = universe();
-			Graph cfContextG = resolve(null, u.edgesTaggedWithAny(XCSG.ControlFlow_Edge, XCSG.ExceptionalControlFlow_Edge).eval());
-			AtlasSet<Node> cfRoots = u.nodesTaggedWithAny(XCSG.controlFlowRoot).eval().nodes();
+			Graph cfContextG = resolve(null, u.edges(XCSG.ControlFlow_Edge, XCSG.ExceptionalControlFlow_Edge).eval());
+			AtlasSet<Node> cfRoots = u.nodes(XCSG.controlFlowRoot).eval().nodes();
 			int work = (int) cfRoots.size();
 			ArrayList<Node> rootList = new ArrayList<Node>(work);
 			for (Node root : cfRoots){
@@ -273,6 +268,9 @@ public class DecompiledLoopIdentification implements Runnable {
 				for (Edge loopbackEdge : loopbacks) {
 					loopbackEdge.tag(XCSG.ControlFlowBackEdge);
 				}
+				
+				recordLoopDepth(sortedLoopHeaders);
+				
 			} catch (Throwable t) {
 				Log.error("Problem in loop analyzer thread for CFG root:\n" + root, t);
 			}
@@ -282,6 +280,35 @@ public class DecompiledLoopIdentification implements Runnable {
 			}
 			synchronized (monitor) {
 				monitor.worked(1);
+			}
+		}
+	}
+
+	private void recordLoopDepth(ArrayList<Node> loopHeaders) {
+		// mark loopDepth; loopDepth starts at 1 for outermost Loops
+		// and children are at the same depth as their loop headers
+		// (unless the child is a loop header in which case the depth is +1)
+		
+		AtlasSet<Node> level1Headers = new AtlasNodeHashSet();
+		for (Node loopHeader : loopHeaders) {
+			if (!loopHeader.hasAttr(CFGNode.LOOP_MEMBER_ID)) {
+				level1Headers.add(loopHeader);
+			}
+		}
+		for (Node loopHeader : level1Headers) {
+			recordLoopDepth(loopHeader, 1);
+		}
+	}
+
+	private void recordLoopDepth(Node loopHeader, int depth) {
+		loopHeader.putAttr(Toolbox.loopDepth, depth);
+		AtlasSet<Edge> loopChildren = loopHeader.out(XCSG.LoopChild);
+		for (Edge loopChild : loopChildren) {
+			Node member = loopChild.to();
+			if (member.taggedWith(XCSG.Loop)) {
+				recordLoopDepth(member, depth+1);
+			} else {
+				member.putAttr(Toolbox.loopDepth, depth);
 			}
 		}
 	}
