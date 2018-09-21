@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -295,21 +296,44 @@ public class DecompiledLoopIdentification implements Runnable {
 				level1Headers.add(loopHeader);
 			}
 		}
+		AtlasSet<Node> processedLoops = new AtlasHashSet<Node>();
+		Stack<LoopLevel> loopLevels = new Stack<LoopLevel>();
 		for (Node loopHeader : level1Headers) {
-			recordLoopDepth(loopHeader, 1);
+			loopLevels.push(new LoopLevel(loopHeader, 1));
+		}
+		while(!loopLevels.isEmpty()) {
+			LoopLevel loopLevel = loopLevels.pop();
+			Node loopHeader = loopLevel.getLoopHeader();
+			int depth = loopLevel.getDepth();
+			loopHeader.putAttr(Toolbox.loopDepth, depth);
+			processedLoops.add(loopHeader);
+			AtlasSet<Edge> loopChildren = loopHeader.out(XCSG.LoopChild);
+			for (Edge loopChild : loopChildren) {
+				Node member = loopChild.to();
+				if (member.taggedWith(XCSG.Loop)) {
+					if(!processedLoops.contains(member)) {
+						// this is to prevent infinite traversals
+						loopLevels.push(new LoopLevel(member, (depth+1)));
+					}
+				} else {
+					member.putAttr(Toolbox.loopDepth, depth);
+				}
+			}
 		}
 	}
-
-	private void recordLoopDepth(Node loopHeader, int depth) {
-		loopHeader.putAttr(Toolbox.loopDepth, depth);
-		AtlasSet<Edge> loopChildren = loopHeader.out(XCSG.LoopChild);
-		for (Edge loopChild : loopChildren) {
-			Node member = loopChild.to();
-			if (member.taggedWith(XCSG.Loop)) {
-				recordLoopDepth(member, depth+1);
-			} else {
-				member.putAttr(Toolbox.loopDepth, depth);
-			}
+	
+	private static class LoopLevel {
+		private int depth;
+		private Node loopHeader;
+		public LoopLevel(Node loopHeader, int depth) {
+			this.loopHeader = loopHeader;
+			this.depth = depth;
+		}
+		public int getDepth() {
+			return depth;
+		}
+		public Node getLoopHeader() {
+			return loopHeader;
 		}
 	}
 
