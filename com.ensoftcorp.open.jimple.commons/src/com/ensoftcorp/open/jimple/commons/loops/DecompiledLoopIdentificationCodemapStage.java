@@ -32,7 +32,7 @@ public class DecompiledLoopIdentificationCodemapStage extends PrioritizedCodemap
 		try {
 			if(JimpleCommonsPreferences.isDecompiledLoopRecoveryEnabled()){
 				Log.info("Recovering decompiled loops...");
-				if(Common.universe().nodes(XCSG.ControlFlow_Node).nodes(XCSG.Language.Jimple).eval().nodes().isEmpty()){
+				if(Common.universe().nodes(XCSG.ControlFlow_Node).nodes(XCSG.Language.Jimple, XCSG.Language.Java).eval().nodes().isEmpty()){
 					Log.info("No decompiled loops to detect.");
 				} else {
 					DecompiledLoopIdentification.recoverLoops(monitor);
