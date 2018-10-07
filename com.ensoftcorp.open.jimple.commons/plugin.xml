@@ -14,38 +14,6 @@
 	         class="com.ensoftcorp.open.jimple.commons.preferences.JimpleCommonsPreferences">
 	   </initializer>
 	</extension>
-
-   <!-- add jimple toolbox commons preference page (under the toolbox commons preferences) -->
-   <extension
-         point="org.eclipse.ui.preferencePages">
-      <page
-            class="com.ensoftcorp.open.jimple.commons.ui.JimpleCommonsPreferencesPage"
-            id="com.ensoftcorp.open.jimple.commons.ui.preferences"
-            name="Jimple Toolbox Commons"
-            category="com.ensoftcorp.open.commons.ui.preferences">
-      </page>
-   </extension>
-   
-   <!-- defines command handlers -->
-   <extension point="org.eclipse.ui.handlers">
-		<handler commandId="com.ensoftcorp.open.jimple.commons.handlers.jarToJimple"
-				 class="com.ensoftcorp.open.jimple.commons.handlers.JarToJimpleHandler">
-		</handler>
-	</extension>
-	
-	<!-- add some menu items for the command handlers -->
-	<extension point="org.eclipse.ui.menus">
-		<menuContribution locationURI="popup:org.eclipse.jdt.ui.PackageExplorer?after=additions">
-			<menu id="com.ensoftcorp.open.jimple.commons.explorer.menu" 
-				  label="Jimple Toolbox" />
-		</menuContribution>
-		<menuContribution locationURI="popup:com.ensoftcorp.open.jimple.commons.explorer.menu?after=additions">
-			<command commandId="com.ensoftcorp.open.jimple.commons.handlers.jarToJimple" 
-					 icon="icons/jar.gif" 
-					 label="Generate Jimple" 
-					 style="push" />
-		</menuContribution>
-	</extension>
    
    <!-- adds the prioritized codemap stages -->
    <extension point="com.ensoftcorp.open.commons.codemap">
@@ -67,18 +35,6 @@
    <!-- adds language specific analyses -->
    <extension point="com.ensoftcorp.open.commons.language.analysis">
       <language-specific-analysis class="com.ensoftcorp.open.jimple.commons.analysis.CallSiteAnalysis"></language-specific-analysis>
-   </extension>
-   
-   <!-- extension for CFR Decompiler Correspondence view -->
-   <extension
-         point="org.eclipse.ui.views">
-      <view
-            category="com.ensoftcorp.open.commons.views.categories.toolbox"
-            class="com.ensoftcorp.open.jimple.commons.ui.views.decompiler.CFRDecompilerCorrespondenceView"
-            icon="icons/partial.gif"
-            id="com.ensoftcorp.open.jimple.commons.ui.views.decompiler"
-            name="CFR Decompiler Correspondence">
-      </view>
    </extension>
 
 </plugin>

@@ -61,6 +61,7 @@ SOFTWARE.
       <import plugin="org.objectweb.asm.tree" version="6.0.0" match="greaterOrEqual"/>
       <import plugin="com.ensoftcorp.open.commons" version="3.3.7" match="greaterOrEqual"/>
       <import plugin="com.ensoftcorp.open.commons.ui" version="3.3.7" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.open.jimple.commons" version="3.3.7" match="greaterOrEqual"/>
    </requires>
 
    <plugin
@@ -79,6 +80,13 @@ SOFTWARE.
 
    <plugin
          id="org.fife.rsyntaxtextarea"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.ensoftcorp.open.jimple.commons.ui"
          download-size="0"
          install-size="0"
          version="0.0.0"
