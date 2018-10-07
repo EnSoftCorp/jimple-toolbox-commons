@@ -18,7 +18,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
 import com.ensoftcorp.abp.common.util.ABPFileUtils;
-import com.ensoftcorp.open.commons.utilities.DisplayUtils;
+import com.ensoftcorp.open.commons.ui.utilities.DisplayUtils;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties;
 import com.ensoftcorp.open.java.commons.project.ProjectJarProperties.Jar;
 import com.ensoftcorp.open.jimple.commons.handlers.JarToJimpleConfigurationsDialog.JimpleGenerationConfigurations;

@@ -55,9 +55,10 @@ import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.index.common.SourceCorrespondence;
 import com.ensoftcorp.atlas.core.log.Log;
 import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
-import com.ensoftcorp.open.commons.utilities.DisplayUtils;
+import com.ensoftcorp.open.commons.ui.utilities.DisplayUtils;
 import com.ensoftcorp.open.commons.utilities.NodeSourceCorrespondenceSorter;
 import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
 import com.ensoftcorp.open.commons.utilities.selection.ExpiringGraphSelectionProviderView;
@@ -180,7 +181,7 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 														if(node.taggedWith(XCSG.CallSite) || node.taggedWith(XCSG.Instantiation)) {
 															// being a little overly generous to cover all my bases here...
 															Q containedMethods = Common.toQ(lastSelectionScope).contained().nodes(XCSG.Method);
-															Q calledMethods = Common.universe().edges(XCSG.Call).successors(containedMethods);
+															Q calledMethods = Query.universe().edges(XCSG.Call).successors(containedMethods);
 															for(Node targetMethod : calledMethods.eval().nodes()) {
 																if(targetMethod.getAttr(XCSG.name).toString().contains(selectedWord)) {
 																	selectionEvent.add(targetMethod);
@@ -745,7 +746,7 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 			throw new FileNotFoundException("Could not access temporary Jar extraction directory.");
 		} else {
 			Set<IProject> indexedProjects = new HashSet<IProject>();
-			for(Node projectNode : Common.universe().nodes(XCSG.Project).eval().nodes()){
+			for(Node projectNode : Query.universe().nodes(XCSG.Project).eval().nodes()){
 				indexedProjects.add(WorkspaceUtils.getProject(projectNode.getAttr(XCSG.name).toString()));
 			}
 			Set<Jar> indexedProjectJars = new HashSet<Jar>();

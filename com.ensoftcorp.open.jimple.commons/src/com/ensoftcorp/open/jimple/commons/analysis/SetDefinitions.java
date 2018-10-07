@@ -6,6 +6,7 @@ import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.utilities.WorkspaceUtils;
@@ -53,7 +54,7 @@ public class SetDefinitions {
 	public static Q libraries() {
 		AtlasSet<Node> result = new AtlasHashSet<Node>();
 		AtlasSet<Node> libraries = com.ensoftcorp.open.java.commons.analysis.SetDefinitions.libraries().eval().nodes();
-		for(Node projectNode : Common.universe().nodes(XCSG.Project).eval().nodes()) {
+		for(Node projectNode : Query.universe().nodes(XCSG.Project).eval().nodes()) {
 			try {
 				IProject project = WorkspaceUtils.getProject(projectNode.getAttr(XCSG.name).toString());
 				for(Jar jar : ProjectJarProperties.getLibraryJars(project)) {
@@ -77,7 +78,7 @@ public class SetDefinitions {
 	 * For Jimple everything can appear under a library, so we define the application with respect to the JDK libraries
 	 */
 	public static Q app() {
-		return Common.universe().difference(JDKLibraries().contained(), libraries().contained(), SetDefinitions.primitiveTypes(), SetDefinitions.arrayTypes());
+		return Query.universe().difference(JDKLibraries().contained(), libraries().contained(), SetDefinitions.primitiveTypes(), SetDefinitions.arrayTypes());
 	}
 	
 }

@@ -1,7 +1,7 @@
 package com.ensoftcorp.open.jimple.commons.filters.rootset;
 
 import com.ensoftcorp.atlas.core.query.Q;
-import com.ensoftcorp.atlas.core.script.Common;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.filters.rootset.FilterableRootset;
 
@@ -19,7 +19,7 @@ public class LoopHeadersRootset extends FilterableRootset {
 
 	@Override
 	public Q getRootSet() {
-		return Common.universe().nodesTaggedWithAny(XCSG.Loop);
+		return Query.universe().nodes(XCSG.Loop);
 	}
 
 }

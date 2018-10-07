@@ -41,7 +41,7 @@ public class BoundaryConditions {
 		// Boundary conditions are those which leave a loop
 		// Successors in regular ControlFlow only; Exceptional exits are not considered at this time
 		
-		Q qCfg = Query.universe().edgesTaggedWithAny(XCSG.ControlFlow_Edge);
+		Q qCfg = Query.universe().edges(XCSG.ControlFlow_Edge);
 		Graph cfg = qCfg.eval();
 
 		Q conditions = Query.universe().nodesTaggedWithAll(XCSG.ControlFlowCondition);

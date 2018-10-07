@@ -12,6 +12,7 @@ import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.index.common.SourceCorrespondence;
 import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.utilities.NodeSourceCorrespondenceSorter;
@@ -178,7 +179,7 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 	}
 	
 	private boolean parametersMatch(ArrayList<Type> sootParameterTypes, Node atlasMethodNode) {
-		Q parameterEdges = Common.universe().edges(XCSG.HasParameter);
+		Q parameterEdges = Query.universe().edges(XCSG.HasParameter);
 		AtlasSet<Node> atlasMethodParameters = parameterEdges.successors(Common.toQ(methodNode)).eval().nodes();
 		
 		// cheap check, should have the same number of parameters
@@ -213,7 +214,7 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 	}
 
 	protected boolean checkTypeEquality(Type sootType, Node atlasDataFlowNode){
-		Q typeOfEdges = Common.universe().edges(XCSG.TypeOf);
+		Q typeOfEdges = Query.universe().edges(XCSG.TypeOf);
 		Node atlasType = typeOfEdges.successors(Common.toQ(atlasDataFlowNode)).eval().nodes().one();
 		if(atlasType == null){
 			Log.warning("Data Flow Node " + atlasDataFlowNode.address().toAddressString() + " has no type.");
@@ -229,7 +230,7 @@ public abstract class MethodCFGTransform extends BodyTransformer {
 			
 			// check if Atlas node is an array type
 			if(atlasType.taggedWith(XCSG.ArrayType)){
-				Q arrayElementTypeEdges = Common.universe().edges(XCSG.ArrayElementType);
+				Q arrayElementTypeEdges = Query.universe().edges(XCSG.ArrayElementType);
 				Node arrayType = atlasType;
 				atlasType = arrayElementTypeEdges.successors(Common.toQ(arrayType)).eval().nodes().one();
 				if(atlasType == null){

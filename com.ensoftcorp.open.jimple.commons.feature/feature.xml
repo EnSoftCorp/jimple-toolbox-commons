@@ -2,7 +2,7 @@
 <feature
       id="com.ensoftcorp.open.jimple.commons.feature"
       label="Jimple Toolbox Commons"
-      version="3.3.0.qualifier"
+      version="3.3.7.qualifier"
       provider-name="EnSoft Corp.">
 
    <description url="https://ensoftcorp.github.io/jimple-toolbox-commons">
@@ -43,10 +43,6 @@ SOFTWARE.
    </url>
 
    <requires>
-      <import plugin="com.ensoftcorp.atlas.jimple.core" version="3.3.0" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.atlas.jimple.ui" version="3.3.0" match="greaterOrEqual"/>
-      <import feature="com.ensoftcorp.open.java.commons.feature" version="3.3.0.qualifier"/>
-      <import feature="com.ensoftcorp.open.commons.feature" version="3.3.0.qualifier"/>
       <import plugin="org.eclipse.ui"/>
       <import plugin="org.eclipse.core.runtime"/>
       <import plugin="org.eclipse.jdt"/>
@@ -54,11 +50,17 @@ SOFTWARE.
       <import plugin="org.eclipse.jdt.launching"/>
       <import plugin="ca.mcgill.sable.soot" version="2.5.2" match="greaterOrEqual"/>
       <import plugin="ca.mcgill.sable.soot.lib" version="2.5.2" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.abp" version="3.3.0" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.abp.common" version="3.3.0" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.open.java.commons" version="3.3.0" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.abp" version="3.3.7" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.abp.common" version="3.3.7" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.atlas.jimple.core" version="3.3.7" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.atlas.jimple.ui" version="3.3.7" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.open.java.commons" version="3.3.7" match="greaterOrEqual"/>
       <import plugin="org.benf.cfr" version="0.123.0" match="greaterOrEqual"/>
       <import plugin="org.fife.rsyntaxtextarea" version="2.6.1" match="greaterOrEqual"/>
+      <import plugin="org.objectweb.asm" version="6.0.0" match="greaterOrEqual"/>
+      <import plugin="org.objectweb.asm.tree" version="6.0.0" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.open.commons" version="3.3.7" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.open.commons.ui" version="3.3.7" match="greaterOrEqual"/>
    </requires>
 
    <plugin
@@ -72,7 +74,7 @@ SOFTWARE.
          id="org.benf.cfr"
          download-size="0"
          install-size="0"
-         version="0.123.0"
+         version="0.0.0"
          unpack="false"/>
 
    <plugin

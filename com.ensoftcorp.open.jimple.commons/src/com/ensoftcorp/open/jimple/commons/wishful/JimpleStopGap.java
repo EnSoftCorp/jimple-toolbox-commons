@@ -7,6 +7,7 @@ import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.java.commons.wishful.JavaStopGap;
@@ -42,17 +43,17 @@ public class JimpleStopGap {
 		}
 		String[] nonDataFlowDisplayNodeTagArray = new String[nonDataFlowDisplayNodeTags.size()];
 		nonDataFlowDisplayNodeTags.toArray(nonDataFlowDisplayNodeTagArray);
-		Q dataFlowNodes = Common.universe().nodesTaggedWithAny(XCSG.DataFlow_Node);
-		Q classVariableAccessNodes = Common.universe().nodesTaggedWithAny(JavaStopGap.CLASS_VARIABLE_ACCESS);
-		Q nonVanillaDataFlowNodes = Common.universe().nodesTaggedWithAny(nonDataFlowDisplayNodeTagArray);
+		Q dataFlowNodes = Query.universe().nodes(XCSG.DataFlow_Node);
+		Q classVariableAccessNodes = Query.universe().nodes(JavaStopGap.CLASS_VARIABLE_ACCESS);
+		Q nonVanillaDataFlowNodes = Query.universe().nodes(nonDataFlowDisplayNodeTagArray);
 		for (GraphElement dataFlowDisplayNode : dataFlowNodes
 				.difference(classVariableAccessNodes, nonVanillaDataFlowNodes).eval().nodes()) {
 			dataFlowDisplayNode.tag(DATAFLOW_DISPLAY_NODE);
 		}
 
 		// sanity check, better to fail fast here than later...
-		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
-		Q displayNodes = Common.universe().nodesTaggedWithAny(DATAFLOW_DISPLAY_NODE);
+		Q localDataFlowEdges = Query.universe().edges(XCSG.LocalDataFlow);
+		Q displayNodes = Query.universe().nodes(DATAFLOW_DISPLAY_NODE);
 
 		// data flow display nodes should be accessible only from a local data
 		// flow edge
@@ -65,7 +66,7 @@ public class JimpleStopGap {
 		// data flow display nodes parents should not also be data flow display
 		// nodes
 		Q dataFlowDisplayNodeParents = localDataFlowEdges.predecessors(displayNodes);
-		if (!dataFlowDisplayNodeParents.nodesTaggedWithAny(DATAFLOW_DISPLAY_NODE).eval().nodes().isEmpty()) {
+		if (!dataFlowDisplayNodeParents.nodes(DATAFLOW_DISPLAY_NODE).eval().nodes().isEmpty()) {
 			throw new RuntimeException("Unexpected data flow display nodes parents!");
 		}
 	}
@@ -75,7 +76,7 @@ public class JimpleStopGap {
 	 */
 	public static void removeDataFlowDisplayNodeTags() {
 		Log.info("Removing data flow display node tags...");
-		AtlasSet<Node> dataFlowDisplayNodes = Common.universe().nodesTaggedWithAny(DATAFLOW_DISPLAY_NODE).eval()
+		AtlasSet<Node> dataFlowDisplayNodes = Query.universe().nodes(DATAFLOW_DISPLAY_NODE).eval()
 				.nodes();
 		AtlasHashSet<Node> dataFlowDisplayNodesToUntag = new AtlasHashSet<Node>();
 		for (Node dataFlowDisplayNode : dataFlowDisplayNodes) {
@@ -96,7 +97,7 @@ public class JimpleStopGap {
 	 * @return
 	 */
 	public static AtlasSet<Node> getDisplayNodeReferences(GraphElement displayNode) {
-		Q localDataFlowEdges = Common.universe().edgesTaggedWithAny(XCSG.LocalDataFlow);
+		Q localDataFlowEdges = Query.universe().edges(XCSG.LocalDataFlow);
 		Q dataFlowDisplayNodeParents = localDataFlowEdges.predecessors(Common.toQ(displayNode));
 		return dataFlowDisplayNodeParents.eval().nodes();
 	}

@@ -2,7 +2,7 @@ package com.ensoftcorp.open.jimple.commons.loops;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 
-import com.ensoftcorp.atlas.core.script.Common;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.codemap.PrioritizedCodemapStage;
 import com.ensoftcorp.open.jimple.commons.log.Log;
@@ -32,7 +32,7 @@ public class DecompiledLoopIdentificationCodemapStage extends PrioritizedCodemap
 		try {
 			if(JimpleCommonsPreferences.isDecompiledLoopRecoveryEnabled()){
 				Log.info("Recovering decompiled loops...");
-				if(Common.universe().nodes(XCSG.ControlFlow_Node).nodes(XCSG.Language.Jimple, XCSG.Language.Java).eval().nodes().isEmpty()){
+				if(Query.universe().nodes(XCSG.ControlFlow_Node).nodes(XCSG.Language.Jimple, XCSG.Language.Java).eval().nodes().isEmpty()){
 					Log.info("No decompiled loops to detect.");
 				} else {
 					DecompiledLoopIdentification.recoverLoops(monitor);

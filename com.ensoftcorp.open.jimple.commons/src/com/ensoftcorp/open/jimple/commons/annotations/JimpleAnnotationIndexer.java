@@ -19,6 +19,7 @@ import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.codemap.PrioritizedCodemapStage;
@@ -53,10 +54,10 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 
 	@Override
 	public void performIndexing(IProgressMonitor monitor) {
-		if(Common.universe().nodes(XCSG.Language.Jimple).eval().nodes().isEmpty()){
+		if(Query.universe().nodes(XCSG.Language.Jimple).eval().nodes().isEmpty()){
 			return; // there is no jimple in the universe to annotate
 		}
-		for(Node projectNode : Common.universe().nodes(XCSG.Project).nodes(XCSG.Language.Java).eval().nodes()){
+		for(Node projectNode : Query.universe().nodes(XCSG.Project).nodes(XCSG.Language.Java).eval().nodes()){
 			IProject project = WorkspaceUtils.getProject(projectNode.getAttr(XCSG.name).toString());
 			if(project.exists() && project.isOpen() && project.isAccessible()){
 				try {
@@ -98,7 +99,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 	}
 	
 	public static void index(File jar) throws JarException, IOException {
-		for(Node library : Common.universe().nodes(XCSG.Library).eval().nodes()){
+		for(Node library : Query.universe().nodes(XCSG.Library).eval().nodes()){
 			JarInspector inspector = new JarInspector(jar);
 			for(String entry : inspector.getJarEntrySet()){
 				if(entry.endsWith(".class")){
@@ -300,7 +301,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 				if(methodNodes.size() == 1){
 					methodNode = methodNodes.one();
 				} else {
-					Q paramEdges = Common.universe().edgesTaggedWithAny(XCSG.HasParameter);
+					Q paramEdges = Query.universe().edges(XCSG.HasParameter);
 					if(method.desc.contains("()")){
 						// no parameters
 						// save only the methods without any parameters
@@ -313,7 +314,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 						String descriptor = method.desc;
 						String[] parameters = descriptor.substring(descriptor.indexOf("(")+1, descriptor.indexOf(")")).split(";");
 						try {
-							Q typeOfEdges = Common.universe().edges(XCSG.TypeOf);
+							Q typeOfEdges = Query.universe().edges(XCSG.TypeOf);
 							for(int i=0; i<parameters.length; i++){
 								String parameter = parameters[i];
 								if(!parameter.equals("")){

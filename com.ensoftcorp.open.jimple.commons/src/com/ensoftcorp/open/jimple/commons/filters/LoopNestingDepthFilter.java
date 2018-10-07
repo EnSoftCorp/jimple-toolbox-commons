@@ -6,6 +6,7 @@ import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
 import com.ensoftcorp.atlas.core.query.Q;
+import com.ensoftcorp.atlas.core.query.Query;
 import com.ensoftcorp.atlas.core.script.Common;
 import com.ensoftcorp.atlas.core.xcsg.XCSG;
 import com.ensoftcorp.open.commons.filters.InvalidFilterParameterException;
@@ -49,9 +50,9 @@ public class LoopNestingDepthFilter extends NodeFilter {
 		input = super.filterInput(input, parameters);
 		
 		AtlasSet<Node> result = new AtlasHashSet<Node>();
-		Q loopChildEdges = Common.universe().edgesTaggedWithAny(XCSG.LoopChild).retainEdges();
+		Q loopChildEdges = Query.universe().edges(XCSG.LoopChild).retainEdges();
 		Q loopRoots = loopChildEdges.roots();
-		Q loopHeaders = loopChildEdges.nodesTaggedWithAny(XCSG.Loop);
+		Q loopHeaders = loopChildEdges.nodes(XCSG.Loop);
 
 		for (Node header : loopHeaders.eval().nodes()) {
 			Q path = loopChildEdges.between(loopRoots, Common.toQ(header));
