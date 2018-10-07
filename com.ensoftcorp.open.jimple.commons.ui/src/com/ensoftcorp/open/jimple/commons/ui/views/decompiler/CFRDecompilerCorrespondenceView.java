@@ -88,7 +88,7 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 	
 	public CFRDecompilerCorrespondenceView() {
 		setPartName("CFR Decompiler Correspondence");
-		setTitleImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/partial.gif"));
+		setTitleImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons.ui", "icons/partial.gif"));
 		try {
 			IPath stateLocation = Activator.getDefault().getStateLocation();
 			Path stateLocationPath = stateLocation.toFile().toPath();
@@ -234,7 +234,7 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		};
 		increaseFontSizeAction.setText("Increase Font");
 		increaseFontSizeAction.setToolTipText("Increase Font");
-		ImageDescriptor increaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/increase.gif"));
+		ImageDescriptor increaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons.ui", "icons/increase.gif"));
 		increaseFontSizeAction.setImageDescriptor(increaseFontIcon);
 		increaseFontSizeAction.setDisabledImageDescriptor(increaseFontIcon);
 		increaseFontSizeAction.setHoverImageDescriptor(increaseFontIcon);
@@ -248,7 +248,7 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		};
 		decreaseFontSizeAction.setText("Decrease Font");
 		decreaseFontSizeAction.setToolTipText("Decrease Font");
-		ImageDescriptor decreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/decrease.gif"));
+		ImageDescriptor decreaseFontIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons.ui", "icons/decrease.gif"));
 		decreaseFontSizeAction.setImageDescriptor(decreaseFontIcon);
 		decreaseFontSizeAction.setDisabledImageDescriptor(decreaseFontIcon);
 		decreaseFontSizeAction.setHoverImageDescriptor(decreaseFontIcon);
@@ -262,7 +262,7 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		};
 		copyTextToClipboardAction.setText("Copy to Clipboard");
 		copyTextToClipboardAction.setToolTipText("Copy to Clipboard");
-		ImageDescriptor copyTextToClipboardIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/copy.gif"));
+		ImageDescriptor copyTextToClipboardIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons.ui", "icons/copy.gif"));
 		copyTextToClipboardAction.setImageDescriptor(copyTextToClipboardIcon);
 		copyTextToClipboardAction.setDisabledImageDescriptor(copyTextToClipboardIcon);
 		copyTextToClipboardAction.setHoverImageDescriptor(copyTextToClipboardIcon);
@@ -279,7 +279,7 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		};
 		highlightTextAction.setText("Highlight Text");
 		highlightTextAction.setToolTipText("Highlight Text");
-		ImageDescriptor highlightTextIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/search.gif"));
+		ImageDescriptor highlightTextIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons.ui", "icons/search.gif"));
 		highlightTextAction.setImageDescriptor(highlightTextIcon);
 		highlightTextAction.setDisabledImageDescriptor(highlightTextIcon);
 		highlightTextAction.setHoverImageDescriptor(highlightTextIcon);
@@ -287,8 +287,8 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		
 		// add a toggle selection listener button
 		// icon from http://eclipse-icons.i24.cc
-		final ImageDescriptor activeSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/playlistener.gif"));
-		final ImageDescriptor pausedSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/pauselistener.gif"));
+		final ImageDescriptor activeSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons.ui", "icons/playlistener.gif"));
+		final ImageDescriptor pausedSelectionListenerIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons.ui", "icons/pauselistener.gif"));
 		final Action toggleSelectionListenerAction = new Action() {
 			public void run() {
 				processing = true;
@@ -320,8 +320,8 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		// icon from http://eclipse-icons.i24.cc
 		// by default this feature is turned off
 		this.disableGraphSelectionProvider();
-		final ImageDescriptor activeSelectionProviderIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/playprovider.gif"));
-		final ImageDescriptor pausedSelectionProviderIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/pauseprovider.gif"));
+		final ImageDescriptor activeSelectionProviderIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons.ui", "icons/playprovider.gif"));
+		final ImageDescriptor pausedSelectionProviderIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons.ui", "icons/pauseprovider.gif"));
 		final Action toggleSelectionProviderAction = new Action() {
 			public void run() {
 				processing = true;
@@ -362,7 +362,7 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		};
 		pauseAndOpenNewWindowAction.setText("Pause and Open New Window");
 		pauseAndOpenNewWindowAction.setToolTipText("Pause and Open New Window");
-		ImageDescriptor newWindowIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons", "icons/new.png"));
+		ImageDescriptor newWindowIcon = ImageDescriptor.createFromImage(ResourceManager.getPluginImage("com.ensoftcorp.open.jimple.commons.ui", "icons/new.png"));
 		pauseAndOpenNewWindowAction.setImageDescriptor(newWindowIcon);
 		pauseAndOpenNewWindowAction.setDisabledImageDescriptor(newWindowIcon);
 		pauseAndOpenNewWindowAction.setHoverImageDescriptor(newWindowIcon);
