@@ -20,7 +20,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 
 import com.ensoftcorp.atlas.core.db.graph.Edge;
 import com.ensoftcorp.atlas.core.db.graph.Graph;
-import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.graph.operation.ForwardGraph;
@@ -351,7 +350,7 @@ public class DecompiledLoopIdentification implements Runnable {
 		dfsp.put(b0, position);
 
 		for (Edge cfgEdge : cfContextG.edges(b0, NodeDirection.OUT)) {
-			Node b = cfgEdge.getNode(EdgeDirection.TO);
+			Node b = cfgEdge.to();
 
 			if (!traversed.contains(b)) {
 				// Paper Case A
@@ -472,7 +471,7 @@ public class DecompiledLoopIdentification implements Runnable {
 				case EACH_CFG_EDGE:
 					while (f.iterator.hasNext()) {
 						Edge cfgEdge = f.iterator.next();
-						f.b = cfgEdge.getNode(EdgeDirection.TO);
+						f.b = cfgEdge.to();
 						if (!traversed.contains(f.b)) {
 							// Paper Case A
 							// new

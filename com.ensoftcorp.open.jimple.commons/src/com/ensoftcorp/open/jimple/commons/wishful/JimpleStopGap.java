@@ -2,7 +2,6 @@ package com.ensoftcorp.open.jimple.commons.wishful;
 
 import java.util.ArrayList;
 
-import com.ensoftcorp.atlas.core.db.graph.GraphElement;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasHashSet;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
@@ -46,7 +45,7 @@ public class JimpleStopGap {
 		Q dataFlowNodes = Query.universe().nodes(XCSG.DataFlow_Node);
 		Q classVariableAccessNodes = Query.universe().nodes(JavaStopGap.CLASS_VARIABLE_ACCESS);
 		Q nonVanillaDataFlowNodes = Query.universe().nodes(nonDataFlowDisplayNodeTagArray);
-		for (GraphElement dataFlowDisplayNode : dataFlowNodes
+		for (Node dataFlowDisplayNode : dataFlowNodes
 				.difference(classVariableAccessNodes, nonVanillaDataFlowNodes).eval().nodes()) {
 			dataFlowDisplayNode.tag(DATAFLOW_DISPLAY_NODE);
 		}
@@ -96,7 +95,7 @@ public class JimpleStopGap {
 	 * @param displayNode
 	 * @return
 	 */
-	public static AtlasSet<Node> getDisplayNodeReferences(GraphElement displayNode) {
+	public static AtlasSet<Node> getDisplayNodeReferences(Node displayNode) {
 		Q localDataFlowEdges = Query.universe().edges(XCSG.LocalDataFlow);
 		Q dataFlowDisplayNodeParents = localDataFlowEdges.predecessors(Common.toQ(displayNode));
 		return dataFlowDisplayNodeParents.eval().nodes();

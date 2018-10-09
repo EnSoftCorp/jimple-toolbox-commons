@@ -2,9 +2,8 @@ package com.ensoftcorp.open.jimple.commons.loops;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 
+import com.ensoftcorp.atlas.core.db.graph.Edge;
 import com.ensoftcorp.atlas.core.db.graph.Graph;
-import com.ensoftcorp.atlas.core.db.graph.GraphElement;
-import com.ensoftcorp.atlas.core.db.graph.GraphElement.EdgeDirection;
 import com.ensoftcorp.atlas.core.db.graph.GraphElement.NodeDirection;
 import com.ensoftcorp.atlas.core.db.graph.Node;
 import com.ensoftcorp.atlas.core.db.set.AtlasSet;
@@ -51,13 +50,11 @@ public class BoundaryConditions {
 		Q candidates = conditionsInLoops.union(conditionalLoopHeaders);
 		
 		AtlasSet<Node> nodes = candidates.eval().nodes();
-		for (GraphElement pred : nodes) {
-			
-
-			AtlasSet<GraphElement> outEdges = outEdges(cfg, pred);
-			for (GraphElement outEdge : outEdges) {
+		for (Node pred : nodes) {
+			AtlasSet<Edge> outEdges = cfg.edges(pred, NodeDirection.OUT);
+			for (Edge outEdge : outEdges) {
 				
-				GraphElement successor = toNode(outEdge);
+				Node successor = outEdge.to();
 				
 				Object loopIdPred = null;
 				Object loopIdSucc = null;
@@ -123,25 +120,15 @@ public class BoundaryConditions {
 		return o1.equals(o2);
 	}
 
-	private static GraphElement toNode(GraphElement edge) {
-		GraphElement node = edge.getNode(EdgeDirection.TO);
-		return node;
-	}
-
-	private static AtlasSet<GraphElement> outEdges(Graph graph, GraphElement node) {
-		AtlasSet<GraphElement> outEdges = graph.edges(node, NodeDirection.OUT);
-		return outEdges;
-	}
-
-	private static boolean isLoopHeader(GraphElement cfNode) {
+	private static boolean isLoopHeader(Node cfNode) {
 		return cfNode.taggedWith(XCSG.Loop);
 	}
 
-	private static Object getMemberId(GraphElement cfNode) {
+	private static Object getMemberId(Node cfNode) {
 		return cfNode.getAttr(CFGNode.LOOP_MEMBER_ID);
 	}
 
-	private static Object getHeaderId(GraphElement cfNode) {
+	private static Object getHeaderId(Node cfNode) {
 		return cfNode.getAttr(CFGNode.LOOP_HEADER_ID);
 	}
 	
