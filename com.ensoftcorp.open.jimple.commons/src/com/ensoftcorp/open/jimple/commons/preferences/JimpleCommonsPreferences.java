@@ -8,6 +8,14 @@ import com.ensoftcorp.open.jimple.commons.log.Log;
 
 public class JimpleCommonsPreferences extends AbstractPreferenceInitializer {
 
+	/**
+	 * Returns the preference store used for these preferences
+	 * @return
+	 */
+	public static IPreferenceStore getPreferenceStore() {
+		return Activator.getDefault().getPreferenceStore();
+	}
+	
 	private static boolean initialized = false;
 	
 	/**

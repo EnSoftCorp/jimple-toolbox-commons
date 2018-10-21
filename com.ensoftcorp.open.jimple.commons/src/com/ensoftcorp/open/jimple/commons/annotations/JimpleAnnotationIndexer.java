@@ -53,9 +53,9 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 	}
 
 	@Override
-	public void performIndexing(IProgressMonitor monitor) {
+	public boolean performIndexing(IProgressMonitor monitor) {
 		if(Query.universe().nodes(XCSG.Language.Jimple).eval().nodes().isEmpty()){
-			return; // there is no jimple in the universe to annotate
+			return false; // there is no jimple in the universe to annotate
 		}
 		for(Node projectNode : Query.universe().nodes(XCSG.Project).nodes(XCSG.Language.Java).eval().nodes()){
 			IProject project = WorkspaceUtils.getProject(projectNode.getAttr(XCSG.name).toString());
@@ -96,6 +96,7 @@ public class JimpleAnnotationIndexer extends PrioritizedCodemapStage {
 				}
 			}
 		}
+		return true;
 	}
 	
 	public static void index(File jar) throws JarException, IOException {

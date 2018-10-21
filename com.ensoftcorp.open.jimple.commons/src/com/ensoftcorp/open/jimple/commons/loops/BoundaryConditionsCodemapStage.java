@@ -35,15 +35,17 @@ public class BoundaryConditionsCodemapStage extends PrioritizedCodemapStage {
 	}
 
 	@Override
-	public void performIndexing(IProgressMonitor monitor) {
+	public boolean performIndexing(IProgressMonitor monitor) {
+		boolean runIndexer = JimpleCommonsPreferences.isDecompiledLoopRecoveryEnabled();
 		try {
-			if(JimpleCommonsPreferences.isDecompiledLoopRecoveryEnabled()){
+			if(runIndexer){
 				Log.info("Computing loop boundary conditions");
 				BoundaryConditions.run(monitor);
 			}
 		} catch (Exception e) {
 			Log.error("Error computing loop boundary conditions", e);
 		}
+		return runIndexer;
 	}
 
 }

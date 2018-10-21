@@ -28,9 +28,10 @@ public class DecompiledLoopIdentificationCodemapStage extends PrioritizedCodemap
 	}
 
 	@Override
-	public void performIndexing(IProgressMonitor monitor) {
+	public boolean performIndexing(IProgressMonitor monitor) {
+		boolean runIndexer = JimpleCommonsPreferences.isDecompiledLoopRecoveryEnabled();
 		try {
-			if(JimpleCommonsPreferences.isDecompiledLoopRecoveryEnabled()){
+			if(runIndexer){
 				Log.info("Recovering decompiled loops...");
 				if(Query.universe().nodes(XCSG.ControlFlow_Node).nodes(XCSG.Language.Jimple, XCSG.Language.Java).eval().nodes().isEmpty()){
 					Log.info("No decompiled loops to detect.");
@@ -41,6 +42,7 @@ public class DecompiledLoopIdentificationCodemapStage extends PrioritizedCodemap
 		} catch (Exception e) {
 			Log.error("Error recovering decompiled loops", e);
 		}
+		return runIndexer;
 	}
 
 }

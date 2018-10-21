@@ -8,7 +8,6 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
 import com.ensoftcorp.open.jimple.commons.preferences.JimpleCommonsPreferences;
-import com.ensoftcorp.open.jimple.commons.ui.Activator;
 
 /**
  * UI for setting jimple commons preferences
@@ -32,7 +31,7 @@ public class JimpleCommonsPreferencesPage extends FieldEditorPreferencePage impl
 
 	@Override
 	public void init(IWorkbench workbench) {
-		IPreferenceStore preferences = Activator.getDefault().getPreferenceStore();
+		IPreferenceStore preferences = JimpleCommonsPreferences.getPreferenceStore();
 		setPreferenceStore(preferences);
 		setDescription("Configure preferences for the Jimple Commons Toolbox plugin.");
 		
