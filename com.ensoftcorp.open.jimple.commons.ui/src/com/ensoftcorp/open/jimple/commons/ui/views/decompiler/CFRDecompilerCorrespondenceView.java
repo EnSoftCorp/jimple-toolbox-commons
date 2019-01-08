@@ -840,21 +840,24 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		if(!classNode.taggedWith(XCSG.Classifier)){
 			throw new IllegalArgumentException("Parameter methodNode must be an XCSG.Classifier.");
 		}
-		String qualifiedClass = CommonQueries.getQualifiedClassName(classNode);
-		File classFile = new File(extractedJar.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
+		
+		File classFile = toClassFile(extractedJar, classNode);
+		
 		if(!classFile.exists()){
-			//In certain cases (like Spring framework), the root for the class files are located inside a subdirectory in jar that is specified
-			//in the manifest. We need to check for that as well. 
-			File rootClassDir = getRootClassDir(extractedJar);
-			if (rootClassDir != null) {
-				classFile = new File(rootClassDir.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
-				if(!classFile.exists()){
-					return "Could not find corresponding class file: " + classFile.getAbsolutePath();
+			// if Soot's model of the LambdaMetaFactory is used, the generated classes are not in the original binary;
+			// look for the application method where the thunk class was created
+			if (isLambdaThunkClass(classNode)) {
+				Node methodNode = getIndyContext(classNode);
+				if (methodNode != null) {
+					classNode = methodNode.oneIn(XCSG.Contains).from();
+					classFile = toClassFile(extractedJar, classNode);
 				}
-			}else {
+			}
+			if(!classFile.exists()){
 				return "Could not find corresponding class file: " + classFile.getAbsolutePath();
 			}
 		}
+		
 		String classpath = null;
 		SourceCorrespondence sc = (SourceCorrespondence) classNode.getAttr(XCSG.sourceCorrespondence);
 		if(sc != null){
@@ -867,6 +870,56 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		}
 		return decompileClass(classFile, classpath);
 	}
+
+	/**
+	 * Heuristic is based on Soot's modeling of LambdaMetaFactory  
+	 * @param classNode
+	 * @return methodNode
+	 */
+	private Node getIndyContext(Node classNode) {
+		Q qClass = Common.toQ(classNode);
+		Q callers = qClass.children().methods("bootstrap$").predecessorsOn(Query.universe().edges(XCSG.Call));
+		AtlasSet<Node> nCallers = callers.eval().nodes();
+		if (nCallers.size() > 1) {
+			throw new RuntimeException("Too many callers of bootstrap$, cannot infer invokedynamic context");
+		}
+		Node callerNode = nCallers.one();
+		if (callerNode == null)
+			return null;
+		classNode = callerNode.oneIn(XCSG.Contains).from();
+		if (isLambdaThunkClass(classNode)) {
+			return getIndyContext(classNode);
+		}
+		return callerNode;
+	}
+
+	/** 
+	 * Heuristic is based on Soot's modeling of LambdaMetaFactory  
+	 * @param classNode
+	 * @return
+	 */
+	private boolean isLambdaThunkClass(Node classNode) {
+		Q qClass = Common.toQ(classNode);
+		return !qClass.children().methods("bootstrap$").eval().nodes().isEmpty();
+	}
+
+	/**
+	 * 
+	 * @return best match for the given Node; might not exist
+	 */
+	private File toClassFile(File extractedJar, Node classNode) throws JarException, IOException {
+		String qualifiedClass = CommonQueries.getQualifiedClassName(classNode);
+		File classFile = new File(extractedJar.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
+		if(!classFile.exists()){
+			//In certain cases (like Spring framework), the root for the class files are located inside a subdirectory in jar that is specified
+			//in the manifest. We need to check for that as well. 
+			File rootClassDir = getRootClassDir(extractedJar);
+			if (rootClassDir != null) {
+				classFile = new File(rootClassDir.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
+			}
+		}
+		return classFile;
+	}
 	
 	private String decompileMethodFromJar(File extractedJar, Node methodNode) throws JarException, IOException{
 		if(!methodNode.taggedWith(XCSG.Method)){
@@ -876,19 +929,19 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 			throw new IllegalArgumentException("Parameter methodNode must not be a constructor or initializer method.");
 		}
 		Node classNode = Common.toQ(methodNode).parent().eval().nodes().one();
-		String qualifiedClass = CommonQueries.getQualifiedClassName(classNode);
-		File classFile = new File(extractedJar.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
+		
+		File classFile = toClassFile(extractedJar, classNode);
 		if(!classFile.exists()){
-			//In certain cases (like Spring framework), the root for the class files are located inside a subdirectory in jar that is specified
-			//in the manifest. We need to check for that as well. 
-
-			File rootClassDir = getRootClassDir(extractedJar);
-			if (rootClassDir != null) {
-				classFile = new File(rootClassDir.getAbsolutePath() + File.separator + qualifiedClass.replace(".", File.separator) + ".class");
-				if(!classFile.exists()){
-					return "Could not find corresponding class file: " + classFile.getAbsolutePath();
+			// if Soot's model of the LambdaMetaFactory is used, the generated classes are not in the original binary;
+			// look for the application method where the thunk class was created
+			if (isLambdaThunkClass(classNode)) {
+				methodNode = getIndyContext(classNode);
+				if (methodNode != null) {
+					classNode = methodNode.oneIn(XCSG.Contains).from();
+					classFile = toClassFile(extractedJar, classNode);
 				}
-			}else {
+			}
+			if(!classFile.exists()){
 				return "Could not find corresponding class file: " + classFile.getAbsolutePath();
 			}
 		}
