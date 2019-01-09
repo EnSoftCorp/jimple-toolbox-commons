@@ -596,12 +596,7 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 						try {
 							File compiledClass = getOrCreateCompiledClassFile(classNode);
 							try {
-								String classpath = null;
-								SourceCorrespondence sc = (SourceCorrespondence) classNode.getAttr(XCSG.sourceCorrespondence);
-								if(sc != null){
-									IProject project = sc.sourceFile.getProject();
-									classpath = getProjectClasspath(project);
-								}
+								String classpath = getClasspathBySourceCorrespondence(classNode);
 								setText("\n\n" + decompileClass(compiledClass, classpath) + "\n\n");
 							} catch (Exception e) {
 								setText("\n\nCFR ERROR: " + CommonQueries.getQualifiedClassName(classNode) + ":" + e.getMessage() + "\n\n");
@@ -631,7 +626,7 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 		for(Jar jar : ProjectJarProperties.getJars(project)) {
 			classpath += prefix + new File(project.getFile(jar.getPortablePath()).getLocation().toOSString()).getAbsolutePath();
 			if(prefix.isEmpty()) {
-				prefix  = ",";
+				prefix  = File.pathSeparator;
 			}
 		}
 		return classpath;
@@ -858,6 +853,11 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 			}
 		}
 		
+		String classpath = getClasspathBySourceCorrespondence(classNode);
+		return decompileClass(classFile, classpath);
+	}
+
+	private String getClasspathBySourceCorrespondence(Node classNode) {
 		String classpath = null;
 		SourceCorrespondence sc = (SourceCorrespondence) classNode.getAttr(XCSG.sourceCorrespondence);
 		if(sc != null){
@@ -868,11 +868,12 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 				Log.warning("Could not recover project classpath for " + project.getName());
 			}
 		}
-		return decompileClass(classFile, classpath);
+		return classpath;
 	}
 
 	/**
-	 * Heuristic is based on Soot's modeling of LambdaMetaFactory  
+	 * Locate method for which invokedynamic was replaced with the given class.
+	 * Heuristic is based on Soot's modeling of LambdaMetaFactory.
 	 * @param classNode
 	 * @return methodNode
 	 */
@@ -967,7 +968,14 @@ public class CFRDecompilerCorrespondenceView extends ExpiringGraphSelectionProvi
 			throw new IllegalArgumentException("Parameter methodNode must not be a constructor or initializer method.");
 		}
 		String methodName = methodNode.getAttr(XCSG.name).toString();
-		String[] args = new String[]{classFile.getAbsolutePath(), "--methodname", methodName, "--silent"};
+		
+		String classpath = getClasspathBySourceCorrespondence(methodNode);
+		String[] args;
+		if (classpath != null) {
+			args = new String[]{classFile.getAbsolutePath(), "--methodname", methodName, "--silent", "--extraclasspath", classpath};
+		} else {
+			args = new String[]{classFile.getAbsolutePath(), "--methodname", methodName, "--silent"};
+		}
 		return runCFR(args);
 	}
 
