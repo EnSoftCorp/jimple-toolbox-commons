@@ -2,7 +2,7 @@
 <feature
       id="com.ensoftcorp.open.jimple.commons.feature"
       label="Jimple Toolbox Commons"
-      version="3.3.8.qualifier"
+      version="3.6.0.qualifier"
       provider-name="EnSoft Corp.">
 
    <description url="https://ensoftcorp.github.io/jimple-toolbox-commons">
@@ -10,13 +10,13 @@
    </description>
 
    <copyright url="https://ensoftcorp.github.io/jimple-toolbox-commons">
-      Copyright (c) 2016, 2019 EnSoft Corp.
+      Copyright (c) 2016, 2020 EnSoft Corp.
    </copyright>
 
    <license url="https://raw.githubusercontent.com/EnSoftCorp/jimple-toolbox-commons/master/LICENSE">
       MIT License (MIT)
 
-Copyright (c) 2016, 2019 EnSoft Corp.
+Copyright (c) 2016, 2020 EnSoft Corp.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the &quot;Software&quot;), to deal
@@ -50,18 +50,18 @@ SOFTWARE.
       <import plugin="org.eclipse.jdt.launching"/>
       <import plugin="ca.mcgill.sable.soot" version="2.5.2" match="greaterOrEqual"/>
       <import plugin="ca.mcgill.sable.soot.lib" version="2.5.2" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.abp" version="3.3.7" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.abp.common" version="3.3.7" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.atlas.jimple.core" version="3.3.7" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.atlas.jimple.ui" version="3.3.7" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.open.java.commons" version="3.3.8" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.abp" version="3.6.0" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.abp.common" version="3.6.0" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.atlas.jimple.core" version="3.6.0" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.atlas.jimple.ui" version="3.6.0" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.open.java.commons" version="3.6.0" match="greaterOrEqual"/>
       <import plugin="org.benf.cfr" version="0.123.0" match="greaterOrEqual"/>
       <import plugin="org.fife.rsyntaxtextarea" version="2.6.1" match="greaterOrEqual"/>
       <import plugin="org.objectweb.asm" version="6.0.0" match="greaterOrEqual"/>
       <import plugin="org.objectweb.asm.tree" version="6.0.0" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.open.commons" version="3.3.8" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.open.commons.ui" version="3.3.8" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.open.jimple.commons" version="3.3.8" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.open.commons" version="3.6.0" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.open.commons.ui" version="3.6.0" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.open.jimple.commons" version="3.6.0" match="greaterOrEqual"/>
    </requires>
 
    <plugin

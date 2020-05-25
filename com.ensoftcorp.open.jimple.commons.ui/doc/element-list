@@ -1,0 +1,5 @@
+com.ensoftcorp.open.jimple.commons.ui
+com.ensoftcorp.open.jimple.commons.ui.handlers
+com.ensoftcorp.open.jimple.commons.ui.log
+com.ensoftcorp.open.jimple.commons.ui.preferences
+com.ensoftcorp.open.jimple.commons.ui.views.decompiler
