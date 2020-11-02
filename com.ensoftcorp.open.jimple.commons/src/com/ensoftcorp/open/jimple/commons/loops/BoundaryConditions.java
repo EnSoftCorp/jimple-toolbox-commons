@@ -43,7 +43,7 @@ public class BoundaryConditions {
 		Q qCfg = Query.universe().edges(XCSG.ControlFlow_Edge);
 		Graph cfg = qCfg.eval();
 
-		Q conditions = Query.universe().nodesTaggedWithAll(XCSG.ControlFlowCondition);
+		Q conditions = Query.universe().nodes(XCSG.ControlFlowCondition);
 		Q conditionsInLoops = conditions.selectNode(CFGNode.LOOP_MEMBER_ID);
 		Q conditionalLoopHeaders = conditions.selectNode(CFGNode.LOOP_HEADER_ID); // outermost loop headers are missed otherwise
 		
