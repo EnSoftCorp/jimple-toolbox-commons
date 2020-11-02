@@ -250,11 +250,15 @@ public class DecompiledLoopIdentification implements Runnable {
 					}
 				}
 				
+				// Temporary fix to make Loop Catalog work with source code
+				// TODO: A version needs to be created for Java source code
 				for (Node cfgNode : innermostLoopHeaders.keySet()) {
 					Node loopHeader = innermostLoopHeaders.get(cfgNode);
 					cfgNode.putAttr(CFGNode.LOOP_MEMBER_ID, loopHeaderToID.get(loopHeader));
-					Edge edge = Graph.U.createEdge(loopHeader, cfgNode);
-					edge.tag(XCSG.LoopChild);
+					if(loopHeader.taggedWith(XCSG.Language.Jimple)) {
+						Edge edge = Graph.U.createEdge(loopHeader, cfgNode);
+						edge.tag(XCSG.LoopChild);
+					}
 				}
 
 				for (Node reentryNode : reentryNodes) {
