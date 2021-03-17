@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Jimple Toolbox Commons
 Bundle-SymbolicName: com.ensoftcorp.open.jimple.commons;singleton:=true
-Bundle-Version: 3.6.0.qualifier
+Bundle-Version: 3.7.0.qualifier
 Bundle-Activator: com.ensoftcorp.open.jimple.commons.Activator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
