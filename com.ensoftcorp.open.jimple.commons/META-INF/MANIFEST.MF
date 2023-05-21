@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Jimple Toolbox Commons
 Bundle-SymbolicName: com.ensoftcorp.open.jimple.commons;singleton:=true
-Bundle-Version: 3.7.0.qualifier
+Bundle-Version: 3.9.2.qualifier
 Bundle-Activator: com.ensoftcorp.open.jimple.commons.Activator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
@@ -11,17 +11,17 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.jdt.launching,
  ca.mcgill.sable.soot;bundle-version="2.5.2",
  ca.mcgill.sable.soot.lib;bundle-version="2.5.2",
- com.ensoftcorp.abp;bundle-version="3.6.0",
- com.ensoftcorp.abp.common;bundle-version="3.6.0",
- com.ensoftcorp.atlas.jimple.core;bundle-version="3.6.0";visibility:=reexport,
- com.ensoftcorp.atlas.jimple.ui;bundle-version="3.6.0";visibility:=reexport,
- com.ensoftcorp.open.java.commons;bundle-version="3.6.0",
+ com.ensoftcorp.abp;bundle-version="3.9.2",
+ com.ensoftcorp.abp.common;bundle-version="3.9.2",
+ com.ensoftcorp.atlas.jimple.core;bundle-version="3.9.2";visibility:=reexport,
+ com.ensoftcorp.atlas.jimple.ui;bundle-version="3.9.2";visibility:=reexport,
+ com.ensoftcorp.open.java.commons;bundle-version="3.9.2",
  org.benf.cfr;bundle-version="0.123.0",
  org.fife.rsyntaxtextarea;bundle-version="2.6.1",
  org.objectweb.asm;bundle-version="6.0.0";visibility:=reexport,
  org.objectweb.asm.tree;bundle-version="6.0.0",
- com.ensoftcorp.open.commons;bundle-version="3.6.0",
- com.ensoftcorp.open.commons.ui;bundle-version="3.6.0"
+ com.ensoftcorp.open.commons;bundle-version="3.9.2",
+ com.ensoftcorp.open.commons.ui;bundle-version="3.9.2"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Export-Package: com.ensoftcorp.open.jimple.commons.analysis;uses:="com.ensoftcorp.atlas.core.query,com.ensoftcorp.open.java.commons.analysis",

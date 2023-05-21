@@ -2,7 +2,7 @@
 <feature
       id="com.ensoftcorp.open.jimple.commons.feature"
       label="Jimple Toolbox Commons"
-      version="3.7.0.qualifier"
+      version="3.9.2.qualifier"
       provider-name="EnSoft Corp.">
 
    <description url="https://ensoftcorp.github.io/jimple-toolbox-commons">
@@ -50,18 +50,18 @@ SOFTWARE.
       <import plugin="org.eclipse.jdt.launching"/>
       <import plugin="ca.mcgill.sable.soot" version="2.5.2" match="greaterOrEqual"/>
       <import plugin="ca.mcgill.sable.soot.lib" version="2.5.2" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.abp" version="3.7.0" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.abp.common" version="3.7.0" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.atlas.jimple.core" version="3.7.0" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.atlas.jimple.ui" version="3.7.0" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.open.java.commons" version="3.7.0" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.abp" version="3.9.2" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.abp.common" version="3.9.2" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.atlas.jimple.core" version="3.9.2" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.atlas.jimple.ui" version="3.9.2" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.open.java.commons" version="3.9.2" match="greaterOrEqual"/>
       <import plugin="org.benf.cfr" version="0.123.0" match="greaterOrEqual"/>
       <import plugin="org.fife.rsyntaxtextarea" version="2.6.1" match="greaterOrEqual"/>
       <import plugin="org.objectweb.asm" version="6.0.0" match="greaterOrEqual"/>
       <import plugin="org.objectweb.asm.tree" version="6.0.0" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.open.commons" version="3.7.0" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.open.commons.ui" version="3.7.0" match="greaterOrEqual"/>
-      <import plugin="com.ensoftcorp.open.jimple.commons" version="3.7.0" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.open.commons" version="3.9.2" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.open.commons.ui" version="3.9.2" match="greaterOrEqual"/>
+      <import plugin="com.ensoftcorp.open.jimple.commons" version="3.9.2" match="greaterOrEqual"/>
    </requires>
 
    <plugin
