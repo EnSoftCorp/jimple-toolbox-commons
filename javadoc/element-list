@@ -10,9 +10,4 @@ com.ensoftcorp.open.jimple.commons.project
 com.ensoftcorp.open.jimple.commons.soot
 com.ensoftcorp.open.jimple.commons.soot.transforms
 com.ensoftcorp.open.jimple.commons.startup
-com.ensoftcorp.open.jimple.commons.ui
-com.ensoftcorp.open.jimple.commons.ui.handlers
-com.ensoftcorp.open.jimple.commons.ui.log
-com.ensoftcorp.open.jimple.commons.ui.preferences
-com.ensoftcorp.open.jimple.commons.ui.views.decompiler
 com.ensoftcorp.open.jimple.commons.wishful
